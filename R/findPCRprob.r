@@ -32,12 +32,20 @@
 #' 
 #' @export
 #' @examples
+#' \dontrun{
+#' # Experimental inter locus balances for the STR kit one wants to simulate.
 #' target <- c(0.05,0.05,0.06,0.04,0.04,
 #'              0.04,0.06,0.05,0.05,
 #'              0.04,0.04,0.05,0.05,
 #'              0.15,0.07,0.09,0.07)
-#'              
-#' findPCRprob(sim=100, targetLb=target, ncells=200, progress=TRUE)
+#'  
+#' # Find PCR efficiency values that upon simulation
+#' # satisfy the experimental data for 0.5 ng of input DNA.
+#' set.seed(10) # For reproducibility.
+#' findPCRprob(sim=40, targetLb=target, ncells=83, progress=FALSE)
+#' 
+#' # The PCR efficency parameters can now be plugged into the PCR simulation model. 
+#' }
 
 findPCRprob <- function(sim, targetLb, acceptedDev=0.01, stepSize=0.001, 
 			seed=0.75, maxPCRprob=0.95, progress=FALSE, ...){
@@ -46,6 +54,7 @@ findPCRprob <- function(sim, targetLb, acceptedDev=0.01, stepSize=0.001,
 	simData <- list()
 	optimised <- rep(FALSE, length(targetLb))
 	lap <- 0
+  debug <- FALSE
 	
 	# Start with seeded PCR probability for all loci.
 	prob <- rep(seed, length(targetLb))
@@ -84,9 +93,27 @@ findPCRprob <- function(sim, targetLb, acceptedDev=0.01, stepSize=0.001,
 
 		# Compare the means to the target locus balance.
 		diffLb <- simLb - targetLb
-
+    
 		# Check if any simulated mean is within accepted range.
 		acceptedLoci <- abs(diffLb) < acceptedDev
+    
+    if(debug){
+      print("lap")
+      print(lap)
+      print("simDataV")
+      print(simDataV)
+      print("phSum")
+      print(phSum)
+      print("simProp")
+      print(simProp)
+      print("simLb")
+      print(simLb)
+      print("diffLb")
+      print(diffLb)
+      print("acceptedLoci")
+      print(acceptedLoci)
+    }
+    
 		if(any(acceptedLoci)) {
 			
 			# Set flag for accepted loci.

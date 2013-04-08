@@ -28,6 +28,7 @@
 #' @examples
 #' # Create test data.
 #' x <- list(c(250, 260), c(123,109))
+#' # Add simulated heterozygote peak heights to a total peak height for each locus.
 #' addSimAlleles(x)
 
 addSimAlleles <- function(data){

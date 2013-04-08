@@ -1,6 +1,6 @@
 ################################################################################
 # TODO LIST
-# TODO: ...
+# TODO: Don't calculate Size if present in data.
 
 ################################################################################
 # CHANGE LOG
@@ -18,8 +18,8 @@
 #' \code{generateEPG} visualises an EPG from DNA profiling data.
 #'
 #' @details
-#' ggplot2 version of plotEPG. Require packages 'ggplot2' and 'data.table'.
 #' Generates a electropherogram like plot from 'data' and 'kit'.
+#' Homozygotes should be entered as a single entry.
 #' 
 #' @param data data frame containing columns 'Allele', 'Marker' and 'Height'.
 #' @param kit string or integer representing the STR typing kit.
@@ -32,8 +32,11 @@
 #' @keywords internal
 #' @export
 #' @examples
+#' # Load genotyping data.
 #' data("set1")
+#' # Extract a sample.
 #' mySample <- set1[set1$Sample.Name=="PC1",]
+#' # Generate an electropherogram like plot.
 #' generateEPG(data=mySample, kit="ESX17")
 
 
@@ -43,9 +46,14 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
   require(data.table)
   require(strvalidator)
   
+  # Only needed to pass R CMD check. Might be possible to use ggplot differently instead.
+  #if (getRversion() >= "2.15.1"){
+  #  utils::globalVariables(c("Height", "Id","Xmin","Xmax","Text"))
+  #}
+  
   # Debug info.
 	if(debugInfo){
-		print("ENTER: generateEPG")
+	  print(paste("IN:", match.call()[[1]]))
 		print("data:")
 		print(data)
 		print("kit:")
@@ -61,7 +69,7 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
 	} else {
 		distribution=FALSE
 	}
-	markerSpace <- 1.1  # Factor to resize plot area.
+	mSpace <- 1.1  # Factor to resize plot area.
 	
 	# Get kit information.
 	kitInfo <- getKit(kit)
@@ -138,6 +146,8 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
 	alleleInfo <- addDye(data=alleleInfo, kit=kit)
 	# Calculate size of alleles.
 	alleleInfo <- alleleToSize(data=alleleInfo, kit=kit)
+  # Replace NA with the smallest size in kit (plot can't handle all NAs).
+  alleleInfo$Size[is.na(alleleInfo$Size)] <- min(kitInfo$rangeMin)
 
 	# Add dye information.
 	data <- addDye(data=data, kit=kit)
@@ -161,11 +171,11 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
 	}
 
 	# Get information for annotation of markers.
-	myDye <- kitInfo$dye
-	myXmin <- kitInfo$rangeMin
-	myXmax <- kitInfo$rangeMax
+	mDye <- kitInfo$dye
+	mXmin <- kitInfo$rangeMin
+	mXmax <- kitInfo$rangeMax
 	myText <- kitInfo$locus
-	myYval <- vector()
+	mYmax <- vector()
 
 	# Loop over all dye channels.
 	for(ci in unique(data$Dye)){
@@ -174,41 +184,42 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
 		tmpHeight[is.na(tmpHeight)] <- 1 # Make sure we not end up with NA.
 		tmpYmax <- max(tmpHeight)
     if(tmpYmax==0){tmpYmax <- 1} # Make Y max at least 1.
-		myYval <- c(myYval, 
+		mYmax <- c(mYmax, 
 				rep(tmpYmax, length(unique(data$Marker[data$Dye==ci]))))
 	}
 
+  # Make sure numeric.
+  mYmax <- as.numeric(mYmax)
+  
 	# Debug info.
 	if(debugInfo){
 	  print("data:")
 	  print(data)
 	  print(str(data))
-	  print("myDye:")
-	  print(myDye)
-	  print("myXmin:")
-	  print(myXmin)
-	  print("myXmax:")
-	  print(myXmax)
-	  print("myYval:")
-	  print(myYval)
+	  print("mDye:")
+	  print(mDye)
+	  print("mXmin:")
+	  print(mXmin)
+	  print("mXmax:")
+	  print(mXmax)
+	  print("mYmax:")
+	  print(mYmax)
 	  print("myText:")
 	  print(myText)
-	  print("markerSpace:")
-	  print(markerSpace)
+	  print("mSpace:")
+	  print(mSpace)
 	  flush.console()
 	} else {}  
   
-	# Expand the plot (by increasing the Y values) to make room for marker ranges.
-	myYval <- as.numeric(myYval) * markerSpace
-
 	# Create annotation data frame for loci.
-	markerRanges <- data.frame(Dye=factor(myDye),	# Facet.
-				Color=myDye,			# Dye.
-				Xmin=myXmin,			# Marker lower range.	
-				Xmax=myXmax,			# Marker upper range.
-				Size=(myXmin+myXmax)/2,		# Midpoint of marker range.
-				Height=myYval,			# Maximum peak height per channel + margin.
-				Text=myText)			# Marker names.
+	markerRanges <- data.frame(Dye=factor(mDye),	# Facet.
+				Color=mDye,			          # Dye.
+				Xmin=mXmin,			          # Marker lower range.	
+				Xmax=mXmax,			          # Marker upper range.
+				Size=(mXmin+mXmax)/2,		  # Midpoint of marker range.
+				Height=mYmax * mSpace,		# Lower edge of marker range.
+	      mSpace=mSpace,	          # Pass mSpace to aes_string.
+	      Text=myText)			        # Marker names.
 
 	# Debug info.
 	if(debugInfo){
@@ -225,12 +236,12 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
 	myPlot<- ggplot(data=data, aes_string(x="Size", y="Height"))
 
 	# Add marker regions.
-	myPlot <- myPlot + geom_rect(aes_string(xmin="Xmin", xmax="Xmax",
-          ymin="Height", ymax="Height"),
+	myPlot <- myPlot + geom_rect(aes(xmin=Xmin, xmax=Xmax,
+          ymin=Height, ymax=Height * mSpace),
 					alpha = .2, data=markerRanges, fill="blue", color="red")
 
 	# Add marker names.
-	myPlot <- myPlot + geom_text(aes_string(label="Text", y="Height"), 
+	myPlot <- myPlot + geom_text(aes(label=Text, y=Height * mSpace), 
 						data=markerRanges, size=3, vjust = 1)
 
 	# Plot data.
@@ -276,7 +287,7 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
 
 	# Debug info.
 	if(debugInfo){
-		print("EXIT: generateEPG")
+	  print(paste("EXIT:", match.call()[[1]]))
 		flush.console()
 	} else {}
 

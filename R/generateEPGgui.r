@@ -19,8 +19,10 @@
 #' Generate EPG. Possible to save the EPG as a png image file.
 #' @export
 #' @examples
+#' \dontrun{
 #' # Open the graphical user interface.
 #' generateEPGgui()
+#' }
 
 generateEPGgui <- function(){
   
@@ -30,6 +32,7 @@ generateEPGgui <- function(){
   
   # Global variables.
   typingData <- NULL
+  dnaProfile <- NULL
   debug <- FALSE
   epg <- NULL
   
@@ -55,7 +58,7 @@ generateEPGgui <- function(){
                             container = g,
                             expand=TRUE) 
   
-  grid_0 <- glayout(cont = frame_0)
+  grid_0 <- glayout(container = frame_0)
   
   grid_0[1,1] <- glabel("", container=grid_0) # Adds some space.
   
@@ -320,7 +323,7 @@ generateEPGgui <- function(){
   grid_3[2,2] <- epg_title_txt <- gedit(text="",
                                                 width=20,
                                                 initial.msg="",
-                                                cont=grid_3)
+                                                container=grid_3)
   
   grid_3[2,3:4] <- epg_btn <- gbutton(text = "Generate EPG",
                                                 border=TRUE,
@@ -342,22 +345,22 @@ generateEPGgui <- function(){
   grid_3[4,1:2] <- epg_name_txt <- gedit(text="",
                                                  width=15,
                                                  initial.msg=".png is added automatically",
-                                                 cont=grid_3)
+                                                 container=grid_3)
   
   grid_3[4,3] <- epg_w_txt <- gedit(text="3000",
                                             width=4,
                                             initial.msg="",
-                                            cont=grid_3)
+                                            container=grid_3)
   
   grid_3[4,4] <- epg_h_txt <- gedit(text="2000",
                                             width=4,
                                             initial.msg="",
-                                            cont=grid_3)
+                                            container=grid_3)
   
   grid_3[4,5] <- epg_res_txt <- gedit(text="250",
                                               width=4,
                                               initial.msg="",
-                                              cont=grid_3)
+                                              container=grid_3)
   
   grid_3[5,1:5] <- epg_paht_lbl <- glabel(text="File path:",
                                                   container=grid_3,
@@ -447,10 +450,10 @@ generateEPGgui <- function(){
     
     if(!is.null(epg) && val_OK){
       
-      filesep <- .Platform$file.sep
+      separator <- .Platform$file.sep
       
       # Save EPG.      
-      png(file=paste(val_path, filesep, val_name, ".png", sep=""),  
+      png(filename=paste(val_path, separator, val_name, ".png", sep=""),  
           width=val_w, height=val_h, res=val_res)
       plot(epg)
       dev.off()
@@ -476,4 +479,4 @@ generateEPGgui <- function(){
   visible(w) <- TRUE
   
   return(NULL)  
-}  
+}

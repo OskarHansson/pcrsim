@@ -21,7 +21,9 @@
   these are matched to R color names.
 }
 \examples{
+# Some common designation for fluorescent dyes.
 dyes <- data.frame(Dye=c("B","B","B","G","G","Y","R","R"))
+# Get corresponding R colors.
 colors <- dyeToColor(data=dyes)
 }
 \keyword{internal}

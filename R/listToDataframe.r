@@ -29,6 +29,8 @@
 
 listToDataframe <- function(data, kit, colName=NA){
 
+  require(strvalidator)
+  
 	# Create a data frame for the result.
 	newData <- data.frame(NA, NA)
 

@@ -4,7 +4,7 @@
 \usage{
   simPCR(ncells, probEx = 1, probAlq = 1, probPCR = 1,
     cyc = 28, tDetect = 2 * 10^7, dip = TRUE, KH = 55,
-    sim = 1, debugInfo = FALSE)
+    sim = 1)
 }
 \arguments{
   \item{ncells}{integer for number of cells/dna molecules
@@ -34,8 +34,6 @@
   molecules to peak height.}
 
   \item{sim}{integer, number of simulations.}
-
-  \item{debugInfo}{logical, print debug info to prompt.}
 
   \item{dip}{logical flagging for diploid cells (haploid
   cells are currently not implemented)}

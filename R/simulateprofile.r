@@ -10,9 +10,10 @@
 
 ################################################################################
 # CHANGE LOG
+# 17: Prevent valus >1 x[x>1] <- 1 for probabilities.
 # 16: Distributions for degradation is working.
 # 15: Changed control: either ncells, conc+vol OR slop+interc+vol.
-# 14: Prevent negative valus x[x<0] <- 0 for some distributions.
+# 14: Prevent negative valus x[x<0] <- 0 for some distributions/probabilities.
 # 13: Implemented distributions for parameters.
 # 13: Using df and slim format.
 # 13: Conversion of various df input for 'alleles'.
@@ -53,7 +54,6 @@
 #' @param simulations integer, number of simulations.
 #' @param celldna, numeric giving the DNA content of a cell.
 #' @param ... arguments to be passed to \code{\link{simPCR}}
-#' @param debugInfo logical, print debug info to prompt.
 #' 
 #' @return list with simulation results.
 #' @export
@@ -80,14 +80,17 @@ simulateProfile<-function(alleles,
                           volume=NA, volume.sd=0,
                           aliq=NA, aliq.sd=0,
                           simulations=1, kit=NA,
-                          celldna=0.006, debugInfo=FALSE, ...){
+                          celldna=0.006, ...){
 
+  # Constants.
+  debug=FALSE
+  
   # Load dependencies.
   require(strvalidator)
   
   # Debug info.
-  if(debugInfo){
-    print("ENTER: simulateProfile")
+  if(debug){
+    print(paste("IN:", match.call()[[1]]))
     print("Kit:")
     print(kit)
     print("ncells:")
@@ -134,7 +137,7 @@ simulateProfile<-function(alleles,
     
     # Draw random extraction volumes for each simulation.
     rvolume <- rnorm(simulations, volume, volume.sd)
-    rvolume[rvolume <0] <- 0
+    rvolume[rvolume < 0] <- 0
     
   } else{
     stop("Extraction volume must be provided!")
@@ -146,10 +149,10 @@ simulateProfile<-function(alleles,
     
     # Draw the number of cells for each simulation.
     dna <- rnorm(simulations, ncells, ncells.sd)
-    dna[dna <0] <- 0
+    dna[dna < 0] <- 0
     
     # Debug info.
-    if(debugInfo){
+    if(debug){
       print("dna drawn from ncells")
       print("dna:")
       print(dna)
@@ -162,13 +165,13 @@ simulateProfile<-function(alleles,
       
     # Draw random concentrations for each simulation.
     rconc <- rnorm(simulations, conc, conc.sd)
-    rconc[rconc <0] <- 0
+    rconc[rconc < 0] <- 0
     
     # Approximate the number of cells for each simulation.
     dna <- (rconc * rvolume) / celldna
 
     # Debug info.
-    if(debugInfo){
+    if(debug){
       print("dna estimated from concentration")
       print("dna:")
       print(dna)
@@ -194,7 +197,8 @@ simulateProfile<-function(alleles,
 
     # Draw random extraction probabilities for each simulation.
     rexprob <- rnorm(simulations, exprob, exprob.sd)
-    rexprob[rexprob <0] <- 0
+    rexprob[rexprob < 0] <- 0
+    rexprob[rexprob > 1] <- 1
     
   } else{
     stop("Extraction probability must be provided!")
@@ -207,10 +211,12 @@ simulateProfile<-function(alleles,
 
     # Draw random aliguotes for each simulation.
     raliq <- rnorm(simulations, aliq, aliq.sd)
-    raliq[raliq <0] <- 0
+    raliq[raliq < 0] <- 0
     
     # Calculate 'probAlq'.
     paliq <- raliq / rvolume
+    paliq[paliq < 0] <- 0
+    paliq[paliq > 1] <- 1
     
   } else{
     stop("Extraction volume and an aliquote must be provided!")
@@ -225,7 +231,7 @@ simulateProfile<-function(alleles,
 	  allelesDf <- listToDataframe(data=alleles, kit=kit, colName="Allele")
 
     # Debug info.
-	  if(debugInfo){
+	  if(debug){
 	    print("alleles is list - convert to data.frame:")
 	    print(allelesDf)
 	    flush.console()
@@ -236,7 +242,7 @@ simulateProfile<-function(alleles,
     allelesDf <- alleles
 
     # Debug info.
-	  if(debugInfo){
+	  if(debug){
 	    print("alleles is data.frame:")
 	    print(allelesDf)
 	    flush.console()
@@ -250,7 +256,7 @@ simulateProfile<-function(alleles,
   if(length(grep("Allele", names(allelesDf))) > 1) {
 
     # Debug info.
-    if(debugInfo){
+    if(debug){
       print("alleles is 'fat' format:")
       print(allelesDf)
       flush.console()
@@ -260,7 +266,7 @@ simulateProfile<-function(alleles,
     allelesDf <- slim(data=allelesDf, fix=c("Marker"), stack=c("Allele"))
 
     # Debug info.
-    if(debugInfo){
+    if(debug){
       print("convert to 'slim' format:")
       print(allelesDf)
       flush.console()
@@ -280,7 +286,7 @@ simulateProfile<-function(alleles,
 		allelesDf <- alleleToSize(data=allelesDf, kit=kit)
     
 	  # Debug info.
-	  if(debugInfo){
+	  if(debug){
 	    print("'Size' added:")
 	    print(allelesDf)
 			flush.console()
@@ -290,7 +296,7 @@ simulateProfile<-function(alleles,
   # DEBUG ---------------------------------------------------------------------
   
   # Debug info.
-  if(debugInfo){
+  if(debug){
     print("aliquote:")
     print(head(raliq))
     print("probAlq:")
@@ -338,7 +344,7 @@ simulateProfile<-function(alleles,
       cAsize <- allelesDf$Size[allelesDf$Marker==cMarker]
 
       # Debug info.
-      if(debugInfo){
+      if(debug){
         print("cAsize:")
         print(cAsize)
         flush.console()
@@ -356,7 +362,7 @@ simulateProfile<-function(alleles,
     allNA <- all(is.na(cAlleles))  # Check if only NA's.
 
     # Debug info.
-    if(debugInfo){
+    if(debug){
       print("nbAlleles:")
       print(nbAlleles)
       print("anyNA:")
@@ -375,7 +381,7 @@ simulateProfile<-function(alleles,
     }
 
     # Debug info.
-    if(debugInfo){
+    if(debug){
       print("cMarker:")
       print(cMarker)
       print("cAlleles:")
@@ -411,7 +417,7 @@ simulateProfile<-function(alleles,
       }
   
   		# Debug info.
-  		if(debugInfo){
+  		if(debug){
   		  print("cA:")
   		  print(cA)
   		  print("cQuant:")
@@ -423,7 +429,7 @@ simulateProfile<-function(alleles,
   		if(!is.na(cA)){
   
   			# Debug info.
-  			if(debugInfo){
+  			if(debug){
   				print(paste("probPCR:", cLb))
   				print(paste("simulations:", simulations))
   				print("... :")
@@ -433,11 +439,11 @@ simulateProfile<-function(alleles,
   
   			# Simulate pcr for an allele , the specified number of times.
   			tmpPH <- simPCR(ncells=cQuant, probEx=rexprob, probAlq=paliq, probPCR=cLb, 
-                         sim=simulations, debugInfo=FALSE, ...)
+                         sim=simulations, ...)
   
         
   			# Debug info.
-  			if(debugInfo){
+  			if(debug){
   				print("tmpPH:")
   				print(head(tmpPH))
   				flush.console()
@@ -462,15 +468,15 @@ simulateProfile<-function(alleles,
 	}
 
 	# Debug info.
-	if(debugInfo){
+	if(debug){
 		print("resultDf:")
 		print(head(resultDf))
 		flush.console()
 	}
 
 	# Debug info.
-	if(debugInfo){
-		print("EXIT: simulateProfile")
+	if(debug){
+	  print(paste("EXIT:", match.call()[[1]]))
 		flush.console()
 	}
 

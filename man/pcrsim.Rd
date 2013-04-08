@@ -18,7 +18,9 @@
   global environment. The EPG can be saved as a png-image.
 }
 \examples{
-# To start the graphical user interface.
+\dontrun{
+# Open the graphical user interface.
 pcrsim()
+}
 }
 

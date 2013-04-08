@@ -12,7 +12,7 @@
   required for the simulation. Once calibrated the program
   can be used to: reduce the laboratory work needed for
   validation of new STR kits, help develop methods for
-  interpretaion of DNA evidence, etc. This is a first
+  interpretation of DNA evidence, etc. This is a first
   version which is still experimental/under development.
 
   \tabular{ll}{ Package: \tab pcrsim\cr Type: \tab
@@ -31,7 +31,7 @@
   Graphical Simulation Model of the Entire DNA Process
   Associated with the Analysis of Short Tandem Repeat
   Loci\\u0022 Nucleic Acids Research 33, no. 2 (2005):
-  632–643. doi:10.1093/nar/gki205.
+  632-643. doi:10.1093/nar/gki205.
 }
 \keyword{package}
 

@@ -1,11 +1,15 @@
 ################################################################################
 # TODO LIST
+# TODO: remove vectorization (not possible in the fixed loop '13') Add stutters.
 # TODO: Validate and calibrate the model.
 # TODO: Clean up code.
 # TODO: Implement CE parameters?
 
+# Remember: x*y = exp(log(x)+log(y))
+
 ################################################################################
 # CHANGE LOG
+# 13: Fixed compatibility issue with R>=3 (rbinom returns integer -> NA for large numbers)
 # 12: Added more debugging and verifications.
 # 11: Roxygenized.
 # 10: Modelling degradation by giving ncells(quant) per allele.
@@ -35,7 +39,6 @@
 #' @param tDetect integer, detection threshold. Number of molecules needed to trigger a signal.
 #' @param KH integer, correlation factor for number of molecules to peak height.
 #' @param sim integer, number of simulations.
-#' @param debugInfo logical, print debug info to prompt.
 #' @param dip logical flagging for diploid cells (haploid cells are currently not implemented)
 #' 
 #' @return list with simulation results.
@@ -45,11 +48,15 @@
 
 
 simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28, 
-		tDetect=2*10^7, dip=TRUE, KH=55, sim=1, debugInfo=FALSE) {
+		tDetect=2*10^7, dip=TRUE, KH=55, sim=1) {
 
+  # Constants.
+  debug=FALSE
+  imax <- .Machine$integer.max
+  
 	# Debug info.
-	if(debugInfo){
-		print("ENTER: simPCR4")
+	if(debug){
+	  print(paste("IN:", match.call()[[1]]))
 		flush.console()
 	}
 
@@ -61,7 +68,7 @@ simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28,
   	# pHaploid=0.5
   
   	# Debug info.
-  	if(debugInfo){
+  	if(debug){
   	  print("ncells:")
   	  print(head(ncells))
   	  print("probEx:")
@@ -93,7 +100,7 @@ simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28,
   	}
     
     #cheking the probabilities input parameters:
-  	#probEx: extrcation efficiency
+  	#probEx: extraction efficiency
   	if(!is.numeric(probEx) || is.na(probEx) || probEx <0 || probEx >1){
           stop("'probEx' is a probability, it must belong to [0,1]")
     }
@@ -127,9 +134,10 @@ simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28,
   	nAs<- rbinom(n=sim,size=ndna,prob=probEx)
 
   	# Debug info.
-  	if(debugInfo){
+  	if(debug){
   	  print("nAs")
-  	  print(nAs)  
+  	  print(nAs)
+  	  print(class(nAs))
   	  flush.console()
   	}
   	
@@ -139,18 +147,60 @@ simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28,
   	nA<-rbinom(n=sim,size=nAs,prob=probAlq)
 
   	# Debug info.
-  	if(debugInfo){
+  	if(debug){
   	  print("nA")  
-  	  print(nA)  
+  	  print(nA)
+  	  print(class(nA))
   	  flush.console()
   	}
   	
   	##################PCR efficiency: 
   
   	# For each cycle (defind in cyc)
-  	tmpA<-nA
-  	for(t in 1:cyc) {
-  		tmpA <- tmpA + rbinom(n=sim, size=tmpA, prob=probPCR)
+  	tmpA<-as.numeric(nA)
+    
+    for(c in 1:cyc) {
+
+      # NB! To avoid NA (integer overflow) in rbinom (R >= 3.0.0):
+      # Divide in max integer and add up after rbinom.
+      iChunks <- floor(tmpA / imax)
+      rest <- tmpA - iChunks * imax 
+      # Debug info.
+      if(debug){
+        print("iChunks (number of imax chunks)")  
+        print(iChunks)
+        print("tmpA")  
+        print(tmpA)
+        print("rest")  
+        print(rest)
+        print("if(iChunks>0)")
+        print(iChunks>0)
+        flush.console()
+      }
+      
+      for(s in 1:sim){
+        
+        if(iChunks[s] > 0) {
+
+          # Run rbinom for all 
+          for(b in 1:iChunks[s]){
+            tmpA[s] <- tmpA[s] + as.numeric(rbinom(n=1, size=imax, prob=probPCR))
+          }
+          # Add the rest.
+          tmpA[s] <- tmpA[s] + as.numeric(rbinom(n=1, size=rest[s], prob=probPCR))
+        } else {
+          tmpA[s] <- tmpA[s] + as.numeric(rbinom(n=1, size=rest[s], prob=probPCR))
+        }
+      }
+      
+#       # ORIGINAL (DOES NOT WORK FOR VECTORS)
+#       if(i>0) {
+#         for(b in 1:i){
+#           tmpA <- tmpA + as.numeric(rbinom(n=sim, size=imax, prob=probPCR))
+#         }
+#       }
+#       tmpA <- tmpA + rbinom(n=sim, size=rest, prob=probPCR)
+      
   	}
   
   	###################CE parameters:
@@ -163,34 +213,34 @@ simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28,
   
   	#generating peak heights: this might be subject to change during model calibration
   	# +tDetect to avoid 0 and negative values.
-
+  	
   	# Debug info.
-  	if(debugInfo){
+  	if(debug){
   	  print("tmpA")    
   	  print(tmpA)    
   	  flush.console()
   	}
     
   	vecH1 <- log((tmpA+tDetect)/tDetect) * KH
-  	vecH1 <- round(vecH1)
-  
+  	res <- round(vecH1)
+
+    if(any(is.na(res))){
+      warning(paste("Simulation contains NA", match.call()[[1]]))
+    }
+    
   	# Debug info.
-  	if(debugInfo){
-  		print("vecH1:")
-  		print(head(vecH1))
+  	if(debug){
+  		print("res:")
+  		print(head(res))
   		flush.console()
   	}
   
   
-  	# Create result.
-  	res <- vecH1
-  
   	# Debug info.
-  	if(debugInfo){
-  		print("EXIT: simPCR4")
+  	if(debug){
+  	  print(paste("EXIT:", match.call()[[1]]))
   		flush.console()
   	}
-  
   
   	# Return simulated peak heights.
   	return(res)

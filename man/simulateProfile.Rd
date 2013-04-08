@@ -7,7 +7,7 @@
     intercept.sd = 0, slope = NA, slope.sd = 0,
     exprob = NA, exprob.sd = 0, volume = NA, volume.sd = 0,
     aliq = NA, aliq.sd = 0, simulations = 1, kit = NA,
-    celldna = 0.006, debugInfo = FALSE, ...)
+    celldna = 0.006, ...)
 }
 \arguments{
   \item{alleles}{list of alleles per marker.}
@@ -59,8 +59,6 @@
 
   \item{...}{arguments to be passed to
   \code{\link{simPCR}}}
-
-  \item{debugInfo}{logical, print debug info to prompt.}
 }
 \value{
   list with simulation results.

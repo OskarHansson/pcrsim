@@ -33,6 +33,8 @@
 
 alleleToSize <- function(data, kit, debugInfo=FALSE){
   
+  require(strvalidator)
+  
   # Debug info.
   if(debugInfo){
     print("ENTER: alleleToSize")

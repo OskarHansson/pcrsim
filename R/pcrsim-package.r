@@ -5,7 +5,7 @@
 #' opens up a graphical user interface which allow the user to enter parameters
 #' required for the simulation. Once calibrated the program can be used to:
 #' reduce the laboratory work needed for validation of new STR kits,
-#' help develop methods for interpretaion of DNA evidence, etc.
+#' help develop methods for interpretation of DNA evidence, etc.
 #' This is a first version which is still experimental/under development.   
 #' 
 #' \tabular{ll}{
@@ -22,11 +22,12 @@
 #' @name pcrsim-package
 #' @author Oskar Hansson \email{oskar.hansson@@fhi.no}
 #' @section Warning: This package is experimental and has not been thoroughly validated.
+#' @import  ggplot2 data.table gWidgets RGtk2 strvalidator
 #' @keywords package
 #' @references  Gill, Peter, James Curran, and Keith Elliot.
 #' \\u0022 A Graphical Simulation Model of the Entire DNA Process Associated with
 #'  the Analysis of Short Tandem Repeat Loci\\u0022
-#'  Nucleic Acids Research 33, no. 2 (2005): 632–643. doi:10.1093/nar/gki205.
+#'  Nucleic Acids Research 33, no. 2 (2005): 632-643. doi:10.1093/nar/gki205.
 #'   
 NULL
 

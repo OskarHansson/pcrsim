@@ -28,13 +28,15 @@
   data.
 }
 \details{
-  ggplot2 version of plotEPG. Require packages 'ggplot2'
-  and 'data.table'. Generates a electropherogram like plot
-  from 'data' and 'kit'.
+  Generates a electropherogram like plot from 'data' and
+  'kit'. Homozygotes should be entered as a single entry.
 }
 \examples{
+# Load genotyping data.
 data("set1")
+# Extract a sample.
 mySample <- set1[set1$Sample.Name=="PC1",]
+# Generate an electropherogram like plot.
 generateEPG(data=mySample, kit="ESX17")
 }
 \keyword{internal}

@@ -44,11 +44,19 @@
   simulation result in similar locus balances.
 }
 \examples{
+\dontrun{
+# Experimental inter locus balances for the STR kit one wants to simulate.
 target <- c(0.05,0.05,0.06,0.04,0.04,
              0.04,0.06,0.05,0.05,
              0.04,0.04,0.05,0.05,
              0.15,0.07,0.09,0.07)
 
-findPCRprob(sim=100, targetLb=target, ncells=200, progress=TRUE)
+# Find PCR efficiency values that upon simulation
+# satisfy the experimental data for 0.5 ng of input DNA.
+set.seed(10) # For reproducibility.
+findPCRprob(sim=40, targetLb=target, ncells=83, progress=FALSE)
+
+# The PCR efficency parameters can now be plugged into the PCR simulation model.
+}
 }
 

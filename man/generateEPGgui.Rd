@@ -18,7 +18,9 @@
   image file.
 }
 \examples{
+\dontrun{
 # Open the graphical user interface.
 generateEPGgui()
+}
 }
 

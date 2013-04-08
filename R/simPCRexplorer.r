@@ -29,9 +29,11 @@
 #' 
 #' @export
 #' @examples
+#' \dontrun{
 #' # Simulating 0-1000 cells 1000 times each and plotting means.
 #' sim <- simPCRexplorer(ncells=seq(0,1001, by=10), probEx=0.7, probAlq=0.1, probPCR=0.85)
 #' plot(x=seq(0,1001, by=10), y=lapply(sim, mean), xlab=c("# cells"), ylab=c("Peak height (rfu)"))
+#' }
 
 simPCRexplorer <- function(ncells=100, probEx=1, probAlq=1, probPCR=1,
 			cyc=28, tDetect=2*10^7, dip=TRUE, KH=55,simulations=1000){
