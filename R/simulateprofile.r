@@ -10,18 +10,19 @@
 
 ################################################################################
 # CHANGE LOG
-# 17: Prevent valus >1 x[x>1] <- 1 for probabilities.
-# 16: Distributions for degradation is working.
-# 15: Changed control: either ncells, conc+vol OR slop+interc+vol.
-# 14: Prevent negative valus x[x<0] <- 0 for some distributions/probabilities.
-# 13: Implemented distributions for parameters.
-# 13: Using df and slim format.
-# 13: Conversion of various df input for 'alleles'.
-# 12: Roxygenized.
-# 11: Output a data frame instead of a list.
-# 10: Implementation of degradation parameters.
-# 10: Added parameter 'amount' to use instead of passing 'ncells'
-# 09: New try 2013.
+# 24.04.2013: Added parameter sample.name and column Sample.Name to result (sim# as suffix).
+# <24.04.2013: Prevent valus >1 x[x>1] <- 1 for probabilities.
+# <24.04.2013: Distributions for degradation is working.
+# <24.04.2013: Changed control: either ncells, conc+vol OR slop+interc+vol.
+# <24.04.2013: Prevent negative valus x[x<0] <- 0 for some distributions/probabilities.
+# <24.04.2013: Implemented distributions for parameters.
+# <24.04.2013: Using df and slim format.
+# <24.04.2013: Conversion of various df input for 'alleles'.
+# <24.04.2013: Roxygenized.
+# <24.04.2013: Output a data frame instead of a list.
+# <24.04.2013: Implementation of degradation parameters.
+# <24.04.2013: Added parameter 'amount' to use instead of passing 'ncells'
+# <24.04.2013: New try 2013.
 
 #' @title Simulate DNA profiles
 #'
@@ -35,6 +36,7 @@
 #' Only single person profiles, unique(alleles) will be applied.
 #' 
 #' @param alleles list of alleles per marker.
+#' @param sample.name character string giving optional sample name.
 #' @param ncells numeric, number of cells ( = number of DNA molecules of each allele).
 #' @param ncells.sd numeric, standard deviation.
 #' @param conc numeric, human DNA concentration in DNA extract.
@@ -71,7 +73,7 @@
 #'  volume=200, volume.sd=20,
 #'  aliq=17.5, aliq.sd=1)
 
-simulateProfile<-function(alleles,
+simulateProfile<-function(alleles, sample.name=NULL,
                           ncells=NA, ncells.sd=0,
                           conc=NA, conc.sd=0,
                           intercept=NA, intercept.sd=0, 
@@ -454,7 +456,8 @@ simulateProfile<-function(alleles,
   			tmpPH <- rep(NA, simulations)
   		}
 
-  		tmpData <- data.frame("Marker"=cMarker, 
+  		tmpData <- data.frame("Sample.Name"=paste(sample.name,simulations, sep=""),
+                            "Marker"=cMarker, 
   		                      "Allele"=cA, 
   		                      "Height"=tmpPH,
   		                      stringsAsFactors=FALSE)

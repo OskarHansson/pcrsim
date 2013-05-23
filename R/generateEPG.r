@@ -46,11 +46,6 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
   require(data.table)
   require(strvalidator)
   
-  # Only needed to pass R CMD check. Might be possible to use ggplot differently instead.
-  #if (getRversion() >= "2.15.1"){
-  #  utils::globalVariables(c("Height", "Id","Xmin","Xmax","Text"))
-  #}
-  
   # Debug info.
 	if(debugInfo){
 	  print(paste("IN:", match.call()[[1]]))

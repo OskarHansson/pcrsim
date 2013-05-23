@@ -3,7 +3,7 @@
 \title{PCR simulator}
 \usage{
   simPCR(ncells, probEx = 1, probAlq = 1, probPCR = 1,
-    cyc = 28, tDetect = 2 * 10^7, dip = TRUE, KH = 55,
+    cyc = 28, tDetect = 5 * 10^7, dip = TRUE, KH = 55,
     sim = 1)
 }
 \arguments{

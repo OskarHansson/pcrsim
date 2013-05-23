@@ -9,12 +9,14 @@
 
 ################################################################################
 # CHANGE LOG
-# 13: Fixed compatibility issue with R>=3 (rbinom returns integer -> NA for large numbers)
-# 12: Added more debugging and verifications.
-# 11: Roxygenized.
-# 10: Modelling degradation by giving ncells(quant) per allele.
-#     Does not work for sperm cells...
-# 09: Fresh start 2013
+# 07.05.2013: Formula for calculating rfu changed
+#             from: log((tmpA+tDetect)/tDetect) * KH
+#             to: (tmpA/tDetect) * KH
+# <07.05.2013: Fixed compatibility issue with R>=3 (rbinom returns integer -> NA for large numbers)
+# <07.05.2013: Added more debugging and verifications.
+# <07.05.2013: Roxygenized.
+# <07.05.2013: Modelling degradation by giving ncells(quant) per allele.
+#              Does not work for sperm cells...
 
 
 #' @title PCR simulator
@@ -48,7 +50,7 @@
 
 
 simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28, 
-		tDetect=2*10^7, dip=TRUE, KH=55, sim=1) {
+		tDetect=5*10^7, dip=TRUE, KH=55, sim=1) {
 
   # Constants.
   debug=FALSE
@@ -221,7 +223,7 @@ simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28,
   	  flush.console()
   	}
     
-  	vecH1 <- log((tmpA+tDetect)/tDetect) * KH
+  	vecH1 <- (tmpA/tDetect) * KH
   	res <- round(vecH1)
 
     if(any(is.na(res))){

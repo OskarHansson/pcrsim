@@ -4,7 +4,7 @@
 
 ################################################################################
 # CHANGE LOG
-# 01: First version.
+# 07.05.2013: name change function importGM() -> import()
 
 #' @title Generate EPG GUI
 #'
@@ -230,7 +230,7 @@ generateEPGgui <- function(){
     
     if (file.exists(val)){
       
-      dnaProfile <<- importGM(resultFiles=val)
+      dnaProfile <<- import(resultFiles=val)
       
       dnaProfile <<- trim(data=dnaProfile, samples=NULL,
                          columns="Marker|Allele|Height", ignoreCase=TRUE,
@@ -253,7 +253,7 @@ generateEPGgui <- function(){
     
     if (file.exists(val)){
       
-      dnaProfile <<- importGM(resultFiles=val)
+      dnaProfile <<- import(resultFiles=val)
       
       dnaProfile <<- trim(data=dnaProfile, samples=NULL,
                          columns="Marker|Allele", ignoreCase=TRUE,

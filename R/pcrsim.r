@@ -1,5 +1,7 @@
 ################################################################################
 # TODO LIST
+# TODO: Check if file exist and ask for overwrite when saving...
+# TODO: Add "advanced" setting "pcr efficiency" for "Amplification"
 # TODO: Fix gui, add more controls and tidy up code...
 # TODO: Option to use interlocus balance or not.
 
@@ -8,7 +10,8 @@
 
 ################################################################################
 # CHANGE LOG
-# 01: Added handlers for degradation.
+# 07.05.2013: name change function importGM() -> import()
+# <07.05.2013: Added handlers for degradation.
 
 #' @title GUI for PCR simulator
 #'
@@ -35,7 +38,7 @@ pcrsim <- function(){
   require(strvalidator)
   require(gWidgets)
   require(RGtk2)  ## Is this needed? Seems to be on a fresh install (without tlc/tk)
-  options("guiToolkit"="RGtk2")
+  options(guiToolkit="RGtk2")
   
   # Global variables.
   debug=FALSE
@@ -65,7 +68,7 @@ pcrsim <- function(){
                        spacing=10,
                        use.scrollwindow=FALSE,
                        container = nb,
-                       label="Wellcome",
+                       label="Welcome",
                        expand=FALSE)
 
   profile_gf <- ggroup(horizontal = FALSE,
@@ -358,7 +361,7 @@ pcrsim <- function(){
     
     if (file.exists(val)){
       
-      dnaProfile <- importGM(resultFiles=val)
+      dnaProfile <- import(resultFiles=val)
       
       dnaProfile <- trim(data=dnaProfile, samples=NULL,
                          columns="Marker|Allele", ignoreCase=TRUE,
@@ -381,7 +384,7 @@ pcrsim <- function(){
 
     if (file.exists(val)){
         
-     dnaProfile <- importGM(resultFiles=val)
+     dnaProfile <- import(resultFiles=val)
 
       dnaProfile <- trim(data=dnaProfile, samples=NULL,
 			columns="Marker|Allele", ignoreCase=TRUE,
@@ -979,6 +982,7 @@ pcrsim <- function(){
     enabled(sim_sim_btn) <- FALSE
 
     # Load all settings.
+    val_sample <- svalue(sample_name_txt)
     val_kit <- svalue(profile_kit_drop)
     val_alleles <- profile_tbl[,]
     val_title <- svalue(sim_epg_title_txt)
@@ -1038,6 +1042,7 @@ pcrsim <- function(){
   
       # Simulate.
       simData <<- simulateProfile(alleles=val_alleles,
+                                  sample.name=val_sample,
                                   ncells=val_ncells,
                                   ncells.sd=val_ncells_sd,
                                   conc=val_conc,

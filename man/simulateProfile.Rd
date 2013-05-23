@@ -2,8 +2,8 @@
 \alias{simulateProfile}
 \title{Simulate DNA profiles}
 \usage{
-  simulateProfile(alleles, ncells = NA, ncells.sd = 0,
-    conc = NA, conc.sd = 0, intercept = NA,
+  simulateProfile(alleles, sample.name = NULL, ncells = NA,
+    ncells.sd = 0, conc = NA, conc.sd = 0, intercept = NA,
     intercept.sd = 0, slope = NA, slope.sd = 0,
     exprob = NA, exprob.sd = 0, volume = NA, volume.sd = 0,
     aliq = NA, aliq.sd = 0, simulations = 1, kit = NA,
@@ -11,6 +11,9 @@
 }
 \arguments{
   \item{alleles}{list of alleles per marker.}
+
+  \item{sample.name}{character string giving optional
+  sample name.}
 
   \item{ncells}{numeric, number of cells ( = number of DNA
   molecules of each allele).}
