@@ -2,10 +2,9 @@
 \alias{findScaling}
 \title{Find scaling factor}
 \usage{
-  findScaling(sim, targetH, acceptedDev = 100,
-    stepSize = 1, seed = 0, maxRounds = 10000,
-    progress = FALSE, tDetect = 1.25 * 10^6, cyc = 30,
-    ncells = 83, debug = FALSE)
+findScaling(sim, targetH, acceptedDev = 100, stepSize = 1, seed = 0,
+  maxRounds = 10000, progress = FALSE, tDetect = 1.25 * 10^6, cyc = 30,
+  ncells = 83, debug = FALSE)
 }
 \arguments{
   \item{sim}{integer for number of simulations.}
@@ -36,13 +35,13 @@
   console.}
 }
 \value{
-  numeric vector with scaling factors.
+numeric vector with scaling factors.
 }
 \description{
-  \code{findScaling} Find a peak height scaling value for
-  simPCR that satisfy the target average peak height.
+\code{findScaling} Find a peak height scaling value for
+simPCR that satisfy the target average peak height.
 }
 \details{
-  Experimental function.
+Experimental function.
 }
 

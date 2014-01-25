@@ -2,8 +2,7 @@
 \alias{generateEPG}
 \title{Generate EPG}
 \usage{
-  generateEPG(data, kit, plotTitle = NULL, peaks = TRUE,
-    debugInfo = FALSE)
+generateEPG(data, kit, plotTitle = NULL, peaks = TRUE, debug = FALSE)
 }
 \arguments{
   \item{data}{data frame containing columns 'Allele',
@@ -17,21 +16,24 @@
   \item{peaks}{logical, TRUE plot peaks using mean peak
   height for distributions.}
 
-  \item{debugInfo}{logical for printing debug information
-  to the console.}
+  \item{debug}{logical for printing debug information to
+  the console.}
 }
 \value{
-  NULL.
+NULL.
 }
 \description{
-  \code{generateEPG} visualises an EPG from DNA profiling
-  data.
+\code{generateEPG} visualises an EPG from DNA profiling
+data.
 }
 \details{
-  Generates a electropherogram like plot from 'data' and
-  'kit'. Homozygotes should be entered as a single entry.
+Generates a electropherogram like plot from 'data' and
+'kit'. Homozygotes should be entered as a single entry.
 }
 \examples{
+# Load package.
+library(pcrsim)
+library(strvalidator)
 # Load genotyping data.
 data("set1")
 # Extract a sample.

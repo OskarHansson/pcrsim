@@ -2,9 +2,9 @@
 \alias{simPCRexplorer}
 \title{Explore PCR simulator}
 \usage{
-  simPCRexplorer(ncells = 100, probEx = 1, probAlq = 1,
-    probPCR = 1, cyc = 28, tDetect = 2 * 10^7, dip = TRUE,
-    KH = 55, simulations = 1000)
+simPCRexplorer(ncells = 100, probEx = 1, probAlq = 1, probPCR = 1,
+  cyc = 28, tDetect = 2 * 10^7, dip = TRUE, KH = 55,
+  simulations = 1000)
 }
 \arguments{
   \item{ncells}{number of cells.}
@@ -28,15 +28,15 @@
   cells are currently not implemented)}
 }
 \value{
-  list with simulation results.
+list with simulation results.
 }
 \description{
-  \code{simPCRexplorer} explore \code{simPCR} by varying a
-  parameter.
+\code{simPCRexplorer} explore \code{simPCR} by varying a
+parameter.
 }
 \details{
-  Makes it easy to explore the effect of one parameter on
-  the PCR simulation.
+Makes it easy to explore the effect of one parameter on the
+PCR simulation.
 }
 \examples{
 \dontrun{

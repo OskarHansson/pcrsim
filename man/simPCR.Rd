@@ -2,9 +2,8 @@
 \alias{simPCR}
 \title{PCR simulator}
 \usage{
-  simPCR(ncells, probEx = 1, probAlq = 1, probPCR = 1,
-    cyc = 28, tDetect = 5 * 10^7, dip = TRUE, KH = 55,
-    sim = 1)
+simPCR(ncells, probEx = 1, probAlq = 1, probPCR = 1, cyc = 28,
+  tDetect = NA, dip = TRUE, KH = NA, sim = 1)
 }
 \arguments{
   \item{ncells}{integer for number of cells/dna molecules
@@ -39,15 +38,15 @@
   cells are currently not implemented)}
 }
 \value{
-  list with simulation results.
+list with simulation results.
 }
 \description{
-  \code{simPCR} simulates the PCR process.
+\code{simPCR} simulates the PCR process.
 }
 \details{
-  Based on \code{simPCR2} from the \code{forensim} package
-  by Hinda Haned. Simulates PCR for a single allele by a
-  series of binomial distributions.
+Based on \code{simPCR2} from the \code{forensim} package by
+Hinda Haned. Simulates PCR for a single allele by a series
+of binomial distributions.
 }
 \examples{
 simPCR(ncells=100, probEx=0.7, probAlq=0.1, probPCR=0.85, sim=100)

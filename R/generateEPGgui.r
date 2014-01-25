@@ -4,6 +4,8 @@
 
 ################################################################################
 # CHANGE LOG
+# 25.01.2014: Updated for compatibility with strvalidator 1.0.0.
+# 30.09.2013: Updated to use new getKit function.
 # 07.05.2013: name change function importGM() -> import()
 
 #' @title Generate EPG GUI
@@ -25,10 +27,6 @@
 #' }
 
 generateEPGgui <- function(){
-  
-  require(strvalidator)
-  require(gWidgets)
-  options("guiToolkit"="RGtk2")
   
   # Global variables.
   typingData <- NULL
@@ -66,7 +64,7 @@ generateEPGgui <- function(){
                                                container=grid_0,
                                                anchor=c(-1 ,0))
   
-  grid_0[2,2] <- profile_kit_drop <- gdroplist(items=getKit(), 
+  grid_0[2,2] <- profile_kit_drop <- gdroplist(items=getParameter(), 
                                                        selected = 3,
                                                        editable = FALSE,
                                                        container = grid_0) 
@@ -75,7 +73,7 @@ generateEPGgui <- function(){
   addHandlerChanged(profile_kit_drop, handler = function(h, ...) {
     val <- svalue (h$obj)
     
-    typingData <<- data.frame(Marker=getKit(val)$locus,
+    typingData <<- data.frame(Marker=getParameter(val)$locus,
                              Allele.1="NA",
                              Allele.2="NA",
                              Height.1="NA",
@@ -230,7 +228,7 @@ generateEPGgui <- function(){
     
     if (file.exists(val)){
       
-      dnaProfile <<- import(resultFiles=val)
+      dnaProfile <<- import(fileName=val)
       
       dnaProfile <<- trim(data=dnaProfile, samples=NULL,
                          columns="Marker|Allele|Height", ignoreCase=TRUE,
@@ -253,7 +251,7 @@ generateEPGgui <- function(){
     
     if (file.exists(val)){
       
-      dnaProfile <<- import(resultFiles=val)
+      dnaProfile <<- import(fileName=val)
       
       dnaProfile <<- trim(data=dnaProfile, samples=NULL,
                          columns="Marker|Allele", ignoreCase=TRUE,
@@ -284,7 +282,7 @@ generateEPGgui <- function(){
   grid_2 <- glayout(container = frame_2)
   
   
-  typingData <- data.frame(Marker=getKit(svalue(profile_kit_drop))$locus,
+  typingData <- data.frame(Marker=getParameter(svalue(profile_kit_drop))$locus,
                            Allele.1="NA",
                            Allele.2="NA",
                            Height.1="NA",
@@ -390,7 +388,7 @@ generateEPGgui <- function(){
     epg <<- generateEPG(data=typingData, 
                            kit=val_kit, 
                            plotTitle=val_title, 
-                           debugInfo=debug)
+                           debug=debug)
     
   } )
   

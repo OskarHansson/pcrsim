@@ -4,10 +4,11 @@
 
 ################################################################################
 # CHANGE LOG
-# 04: Added column 'Size' before loop.
-# 03: Roxygenized.
-# 02: Added if condition for 'slim' and option 'debugInfo'.
-# 01: First version
+# 25.01.2014: Updated for compatibility with strvalidator 1.0.0.
+# <25.01.2014: Added column 'Size' before loop.
+# <25.01.2014: Roxygenized.
+# <25.01.2014: Added if condition for 'slim' and option 'debugInfo'.
+# <25.01.2014: First version
 
 #' @title Allele to size
 #'
@@ -28,12 +29,10 @@
 #' 
 #' @keywords internal
 #' 
-#' @seealso getKit
+#' @seealso getParameter
 
 
 alleleToSize <- function(data, kit, debugInfo=FALSE){
-  
-  require(strvalidator)
   
   # Debug info.
   if(debugInfo){
@@ -61,7 +60,7 @@ alleleToSize <- function(data, kit, debugInfo=FALSE){
   }
   
   # Get kit.
-  kitInfo <- getKit(kit)
+  kitInfo <- getParameter(kit)
   marker <- unique(kitInfo$locus)
   offset <- kitInfo$offset
   repeatUnit <- kitInfo$repeatUnit

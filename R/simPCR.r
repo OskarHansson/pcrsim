@@ -9,6 +9,7 @@
 
 ################################################################################
 # CHANGE LOG
+# 24.06.2013: Changed default for 'tDetect' and 'KH' to 'NA'. Only applied if not 'NA'.
 # 07.05.2013: Formula for calculating rfu changed
 #             from: log((tmpA+tDetect)/tDetect) * KH
 #             to: (tmpA/tDetect) * KH
@@ -50,7 +51,7 @@
 
 
 simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28, 
-		tDetect=5*10^7, dip=TRUE, KH=55, sim=1) {
+		tDetect=NA, dip=TRUE, KH=NA, sim=1) {
 
   # Constants.
   debug=FALSE
@@ -97,10 +98,17 @@ simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28,
   	    stop("Th number of PCR cycles must at least equal 1")
   	}
 
-  	if(!is.numeric(tDetect) || is.na(tDetect) || tDetect < 0){
-  	  stop("'tDetect' must be a positive numeric")
+  	if(!is.na(tDetect)){
+  	  if(!is.numeric(tDetect) || tDetect < 0){
+  	    stop("'tDetect' must be a positive numeric or NA")
+  	  }
   	}
-    
+  	if(!is.na(KH)){
+  	  if(!is.numeric(KH) || KH < 0){
+  	    stop("'KH' must be a positive numeric or NA")
+  	  }
+  	}
+  	
     #cheking the probabilities input parameters:
   	#probEx: extraction efficiency
   	if(!is.numeric(probEx) || is.na(probEx) || probEx <0 || probEx >1){
@@ -114,7 +122,7 @@ simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28,
   	
   	#probPCR: PCR efficiency
   	if(!is.numeric(probPCR) || is.na(probPCR) || probPCR <0 || probPCR >1){
-          stop("'pprobPCR' is a probability, it must belong to [0,1]")
+          stop("'probPCR' is a probability, it must belong to [0,1]")
     }
   	
   	#cyc: PCR cycle
@@ -137,7 +145,9 @@ simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28,
 
   	# Debug info.
   	if(debug){
-  	  print("nAs")
+      print("ndna")
+      print(ndna)
+      print("nAs")
   	  print(nAs)
   	  print(class(nAs))
   	  flush.console()
@@ -168,17 +178,17 @@ simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28,
       iChunks <- floor(tmpA / imax)
       rest <- tmpA - iChunks * imax 
       # Debug info.
-      if(debug){
-        print("iChunks (number of imax chunks)")  
-        print(iChunks)
-        print("tmpA")  
-        print(tmpA)
-        print("rest")  
-        print(rest)
-        print("if(iChunks>0)")
-        print(iChunks>0)
-        flush.console()
-      }
+#       if(debug){
+#         print("iChunks (number of imax chunks)")  
+#         print(iChunks)
+#         print("tmpA")  
+#         print(tmpA)
+#         print("rest")  
+#         print(rest)
+#         print("if(iChunks>0)")
+#         print(iChunks>0)
+#         flush.console()
+#       }
       
       for(s in 1:sim){
         
@@ -222,8 +232,19 @@ simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28,
   	  print(tmpA)    
   	  flush.console()
   	}
+
+    # Unessessary step...
+  	vecH1 <- tmpA
     
-  	vecH1 <- (tmpA/tDetect) * KH
+    # Apply detection threshold.
+    if(!is.na(tDetect)){
+      vecH1 <- vecH1 / tDetect
+    }
+    # Apply scaling factor.
+  	if(!is.na(KH)){
+  	  vecH1 <- vecH1 * KH
+  	}
+    # Round to integers.
   	res <- round(vecH1)
 
     if(any(is.na(res))){

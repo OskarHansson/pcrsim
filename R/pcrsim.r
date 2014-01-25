@@ -10,6 +10,12 @@
 
 ################################################################################
 # CHANGE LOG
+# 25.01.2014: Updated for compatibility with strvalidator 1.0.0.
+# 30.09.2013: Updated to use new getParameter function.
+# 24.06.2013: added standard deviation for scaling factor, 'scaling.sd'.
+# 24.06.2013: changed name 'KH' -> 'scaling'.
+# 05.06.2013: added save/load user settings in/from workspace.
+# 04.06.2013: added 'File' tab.
 # 07.05.2013: name change function importGM() -> import()
 # <07.05.2013: Added handlers for degradation.
 
@@ -25,6 +31,7 @@
 #' be viewed within the GUI or plotted as an electropherogram (EPG), 
 #' saved to a text file, or as an R object in the global environment.
 #' The EPG can be saved as a png-image.
+#' @param debug logical, indicating if debug information should be printed.
 #' @export
 #' @examples
 #' \dontrun{
@@ -32,18 +39,22 @@
 #' pcrsim()
 #' }
 
-pcrsim <- function(){
+pcrsim <- function(debug=FALSE){
 
-  # Load dependencies.
-  require(strvalidator)
-  require(gWidgets)
-  require(RGtk2)  ## Is this needed? Seems to be on a fresh install (without tlc/tk)
-  options(guiToolkit="RGtk2")
-  
   # Global variables.
-  debug=FALSE
+  .pcrsim_workspace <- new.env()
+  .separator <- .Platform$file.sep # Platform dependent path separator.
+  .start_tab_name <- "Welcome"
+  .file_tab_name <- "File"
+  .profile_tab_name <- "Profile"
+  .sample_tab_name <- "Sample"
+  .extraction_tab_name <- "Extraction"
+  .amplification_tab_name <- "Amplification"
+  .analysis_tab_name <- "Analysis"
+  .simulation_tab_name <- "Simulation"
+  
   simProfile <- NULL # data.frame.
-  simData <- data.frame(Marker=NA, Allele=NA, Height=NA)
+  simData <- data.frame(Sample.Name=NA, Marker=NA, Allele=NA, Height=NA)
   simEPG <- NULL # ggplot2 object.
   separator <- .Platform$file.sep # Platform dependent path separator.
 
@@ -68,49 +79,56 @@ pcrsim <- function(){
                        spacing=10,
                        use.scrollwindow=FALSE,
                        container = nb,
-                       label="Welcome",
+                       label=.start_tab_name,
                        expand=FALSE)
 
+  file_gf <- ggroup(horizontal = FALSE,
+                       spacing=10,
+                       use.scrollwindow=FALSE,
+                       container = nb,
+                       label=.file_tab_name,
+                       expand=FALSE)
+  
   profile_gf <- ggroup(horizontal = FALSE,
                       spacing=10,
                       use.scrollwindow=FALSE,
                       container = nb,
-                      label="Profile",
+                      label=.profile_tab_name,
                       expand=FALSE)
   
   sample_gf <- ggroup(horizontal = FALSE,
                    spacing=5,
                    use.scrollwindow=FALSE,
                    container = nb,
-                   label="Sample",
+                   label=.sample_tab_name,
                    expand=FALSE)
   
   ex_gf <- ggroup(horizontal = FALSE,
                    spacing=5,
                    use.scrollwindow=FALSE,
                    container = nb,
-                   label="Extraction",
+                   label=.extraction_tab_name,
                    expand=FALSE)
   
   amp_gf <- ggroup(horizontal = FALSE,
                   spacing=5,
                   use.scrollwindow=FALSE,
                   container = nb,
-                  label="Amplification",
+                  label=.amplification_tab_name,
                   expand=FALSE)
   
   ce_gf <- ggroup(horizontal = FALSE,
                    spacing=5,
                    use.scrollwindow=FALSE,
                    container = nb,
-                   label="Analysis",
+                   label=.analysis_tab_name,
                    expand=FALSE)
   
   sim_gf <- ggroup(horizontal = FALSE,
                    spacing=5,
                    use.scrollwindow=FALSE,
                    container = nb,
-                   label="Simulation",
+                   label=.simulation_tab_name,
                    expand=FALSE)
   
   # START #####################################################################
@@ -172,6 +190,527 @@ pcrsim <- function(){
         wrap = TRUE, expand=TRUE, container = start_frame_2) 
   
                      
+  # FILE ######################################################################
+  
+  if(debug){
+    print("TAB: FILE")
+  }
+  
+  
+  # LOADED DATASETS -----------------------------------------------------------
+  
+  if(debug){
+    print("LOADED DATASETS")
+  }
+  
+  file_loaded_f <- gframe(text = "Project workspace",
+                          markup = FALSE,
+                          pos = 0,
+                          horizontal=TRUE,
+                          container = file_gf,
+                          expand=TRUE)
+  
+  file_loaded_f1 <- ggroup(horizontal=FALSE,
+                           container = file_loaded_f,
+                           expand=FALSE)
+  
+  file_loaded_ws_btn <- gbutton(text="Load workspace",
+                                border=TRUE,
+                                container = file_loaded_f1)
+  
+  file_loaded_import_btn <- gbutton(text="Import from GMIDX",
+                                    border=TRUE,
+                                    container = file_loaded_f1)
+  
+  file_loaded_refresh_btn <- gbutton(text="Refresh list",
+                                     border=TRUE,
+                                     container = file_loaded_f1) 
+  
+  file_loaded_rm_btn <- gbutton(text="Remove selected",
+                                border=TRUE,
+                                container = file_loaded_f1) 
+  
+  file_loaded_rename_btn <- gbutton(text="Rename selected",
+                                    border=TRUE,
+                                    container = file_loaded_f1)
+  
+  file_loaded_ws_save_btn <- gbutton(text="Save workspace",
+                                     border=TRUE,
+                                     container = file_loaded_f1)
+  
+  file_loaded_save_chk <- gcheckbox(text="Save fields in ws",
+                                    checked = TRUE,
+                                    container = file_loaded_f1)
+  
+  file_loaded_tbl <- gtable(items=listObjects(env=.pcrsim_workspace,
+                                              objClass="data.frame"), 
+                            multiple = TRUE,
+                            expand = TRUE,
+                            container = file_loaded_f) 
+  
+  
+  addHandlerChanged(file_loaded_rename_btn, handler = function (h, ...) {
+    
+    
+    object <- svalue(file_loaded_tbl)
+    
+    if(length(object) == 1){
+      
+      newName_inp <- ginput(message="Enter new name",
+                            title="Input",
+                            icon = "info",
+                            parent=w)
+      
+      newName_inp <- make.names(newName_inp)
+      
+      if(debug){
+        print("newName_inp")
+        print(newName_inp)
+      }
+      
+      assign(newName_inp,
+             get(object, envir = .pcrsim_workspace),
+             envir = .pcrsim_workspace)
+      
+      remove(list=object, envir=.pcrsim_workspace)
+      
+      .refreshLoaded()
+      
+      
+    } else {
+      gmessage(message="You can only rename one object at a time!",
+               title="Error",
+               icon = "error",
+               parent = w) 
+    }
+    
+  } )
+  
+  addHandlerChanged(file_loaded_ws_btn, handler = function (h, ...) {
+    
+    
+    ws_path <- gfile(text="Select a saved project", type="open",
+                     filter = list("R files" = list(patterns = c("*.R","*.Rdata"))),
+                     multi=FALSE)
+    
+    if(!is.na(ws_path)){
+      if(file.exists(ws_path)){
+        
+        load(file=ws_path, envir = .pcrsim_workspace)
+        .refreshLoaded()
+        
+        # Load saved settings.
+        if(svalue(file_loaded_save_chk)){
+          .loadSavedSettings()
+        }
+        
+      } else {
+        
+        gmessage(message="The project file was not found",
+                 title="File not found",
+                 icon = "error",
+                 parent = w) 
+      }
+    }    
+    
+  } )
+  
+  addHandlerChanged(file_loaded_import_btn, handler = function (h, ...) {
+    
+    import_gui(env=.pcrsim_workspace)
+    .refreshLoaded()
+    
+  } )  
+  
+  addHandlerChanged(file_loaded_refresh_btn, handler = function (h, ...) {
+    
+    .refreshLoaded()
+    
+  })
+  
+  addHandlerChanged(file_loaded_rm_btn, handler = function(h, ...) {
+    
+    # Get selected dataset name(s).
+    val_obj <- svalue(file_loaded_tbl)
+    
+    if(debug){
+      print(paste("IN:", match.call()[[1]]))
+      print("Changed, file_loaded_rm_btn")
+      print(val_obj)
+    }
+    
+    if (!is.na(val_obj) && !is.null(val_obj)){
+      
+      # Get active reference data frame.
+      remove(list=val_obj, envir=.pcrsim_workspace)
+      
+      .refreshLoaded()
+      
+      
+    } 
+  } )
+  
+  addHandlerChanged(file_loaded_ws_save_btn, handler = function (h, ...) {
+    
+    
+    ws_save_path <- gfile(text="Select a directory to save project in",
+                          type="selectdir",
+                          filter = list("R files" = list(patterns = c("*.R","*.Rdata"))),
+                          multi=FALSE)
+    
+    
+    ws_name <- ginput(message="Save current project as", text="",
+                      title="Input",
+                      icon ="info",
+                      parent=w)
+    
+    if(!is.na(ws_name) && !ws_name==""){
+      
+      ws_full_name <- paste(ws_save_path, .separator, ws_name, ".RData", sep="")
+      
+      if(debug){
+        print(ws_full_name)
+      }
+      
+      # TODO: check if file exists. ask for overwrite.
+      #if(file.exists(ws_save_path)){
+      
+      if(file.exists(ws_save_path)){
+
+        # Save settings.
+        if(svalue(file_loaded_save_chk)){
+          .saveSettings()
+        }
+        
+        save(file=ws_full_name, 
+             list=ls(envir = .pcrsim_workspace, all.names = TRUE),
+             envir = .pcrsim_workspace)
+        
+      } else {
+        
+        gmessage(message="The folder was not found",
+                 title="Location not found",
+                 icon = "error",
+                 parent = w) 
+      }
+      
+    } else {
+      gmessage(message="A file name must be given",
+               title="No file name",
+               icon = "error",
+               parent = w) 
+    }
+    
+    
+    
+  } )
+  
+  
+  # DATASETS ------------------------------------------------------------------  
+  
+  if(debug){
+    print("DATASETS")
+  }
+  
+  
+  file_ws_f <- gframe(text = "Load dataframe from R workspace",
+                      markup = FALSE,
+                      pos = 0,
+                      horizontal=TRUE,
+                      container = file_gf,
+                      expand=FALSE)
+  
+  file_ws_f1 <- ggroup(horizontal=FALSE,
+                       container = file_ws_f,
+                       expand=FALSE)
+  
+  glabel("", container=file_ws_f1) # Adds some space.
+  
+  file_ws_refresh_btn <- gbutton(text="Refresh dropdown",
+                                 border=TRUE,
+                                 container = file_ws_f1) 
+  
+  file_ws_load_btn <- gbutton(text="Load dataset",
+                              border=TRUE,
+                              container = file_ws_f1) 
+  
+  glabel("", container=file_ws_f1) # Adds some space.
+  
+  file_ws_drp <- gdroplist(items=c("<Select dataframe>", 
+                                   listObjects(env=.pcrsim_workspace,
+                                               objClass="data.frame")), 
+                           selected = 1,
+                           editable = FALSE,
+                           container = file_ws_f) 
+  
+  addHandlerChanged(file_ws_refresh_btn, handler = function (h, ...) {
+    
+    .refreshWs()
+  } )
+  
+  addHandlerChanged(file_ws_load_btn, handler = function(h, ...) {
+    
+    # Get selected dataset name.
+    val_obj <- svalue(file_ws_drp)
+    
+    if (!is.na(val_obj) && !is.null(val_obj)){
+      
+      # Load dataset.
+      assign(val_obj, get(val_obj), envir=.pcrsim_workspace)
+      
+      # Update list.
+      .refreshLoaded()
+      
+    } 
+  } )
+  
+  
+  # STR TYPING KIT ------------------------------------------------------------
+  
+  if(debug){
+    print("STR TYPING KIT")
+  }
+  
+  #glabel("", container=file_gf) # Adds some space.
+  
+  
+  # LOAD ----------------------------------------------------------------------  
+  
+  if(debug){
+    print("LOAD")
+  }
+  
+  file_load_f <- gframe(text = "Load .RData file",
+                        markup = FALSE,
+                        pos = 0,
+                        horizontal=TRUE,
+                        container = file_gf,
+                        expand=FALSE)
+  
+  glabel("", container=file_load_f) # Adds some space.
+  
+  loadDefText <- "Select file..."
+  file_load_brw <- gfilebrowse(text=loadDefText,
+                               quote=FALSE,
+                               type="open",
+                               container=file_load_f)
+  
+  file_load_btn <- gbutton(text="Load",
+                           border=TRUE,
+                           expand=FALSE,
+                           container=file_load_f)
+  
+  glabel("", container=file_load_f) # Adds some space.
+  
+  addHandlerChanged(file_load_btn, handler = function(h, ...) {
+    
+    # Get values.
+    file_val <- svalue(file_load_brw)
+    
+    if(file.exists(file_val)){
+      #if(file_val != "" && file_val != loadDefText){
+      
+      load(file_val, envir = .pcrsim_workspace)
+      
+      .refreshLoaded()
+      
+    } else {
+      
+      gmessage(message="File not found.",
+               title="Error",
+               icon = "error")      
+    }       
+  } )
+  
+  
+  
+  
+  # EXPORT --------------------------------------------------------------------
+  
+  file_export_f <- gframe(text = "Export | Save",
+                          markup = FALSE,
+                          pos = 0,
+                          horizontal=FALSE,
+                          container = file_gf,
+                          expand=FALSE)
+  
+  
+  file_export_grid <- glayout(container = file_export_f)
+  
+  file_export_grid[1,1] <- file_export_chk <- gcheckbox(text="Use object names",
+                                                        checked = TRUE,
+                                                        container = file_export_grid)
+  
+  file_export_grid[2,1] <- glabel(text="File name (separated by | ):",
+                                  container=file_export_grid,
+                                  anchor=c(-1 ,0))
+  
+  
+  file_export_grid[3,1] <- file_export_name_txt <- gedit(text="",
+                                                         container=file_export_grid)
+  
+  enabled(file_export_name_txt) <- FALSE
+  
+  file_export_grid[2,2] <- glabel(text="File extension:",
+                                  container=file_export_grid,
+                                  anchor=c(-1 ,0))
+  
+  
+  file_export_grid[3,2] <- file_export_ext_cbo <- gcombobox(items=c(".txt", ".RData"),
+                                                            selected = 1,
+                                                            editable = TRUE,
+                                                            container = file_export_grid)
+  
+  file_export_grid[2,3] <- glabel(text="Delimeter:",
+                                  container=file_export_grid,
+                                  anchor=c(-1 ,0))
+  
+  file_export_grid[3,3] <- file_export_del_drp <- gdroplist(items=c("TAB","SPACE","COMMA"), 
+                                                            selected = 1,
+                                                            editable = FALSE,
+                                                            container = file_export_grid) 
+  
+  
+  file_export_grid[4,1] <- glabel(text="File path:",
+                                  container=file_export_grid,
+                                  anchor=c(-1 ,0))
+  
+  expDefText <- "Select folder..."
+  file_export_grid[5,1:2] <- file_export_save_brw <- gfilebrowse(text=expDefText,
+                                                                 quote=FALSE,
+                                                                 type="selectdir",
+                                                                 container=file_export_grid)
+  
+  file_export_grid[5,3] <- file_export_save_btn <- gbutton(text="Save",
+                                                           border=TRUE,
+                                                           container=file_export_grid) 
+  
+  addHandlerChanged(file_export_chk, handler = function(h, ...) {
+    
+    # Get values.
+    ext_val <- svalue(file_export_chk)
+    
+    if(ext_val){
+      enabled(file_export_name_txt) <- FALSE
+    } else {
+      enabled(file_export_name_txt) <- TRUE
+    }    
+  } )
+  
+  addHandlerChanged(file_export_ext_cbo, handler = function(h, ...) {
+    
+    # Get values.
+    ext_val <- svalue(file_export_ext_cbo)
+    
+    if(ext_val == ".RData"){
+      enabled(file_export_del_drp) <- FALSE
+    } else {
+      enabled(file_export_del_drp) <- TRUE
+    }    
+  } )
+  
+  addHandlerChanged(file_export_save_btn, handler = function(h, ...) {
+    
+    # Get values.
+    path_val <- svalue(file_export_save_brw)
+    file_val <- svalue(file_export_name_txt)
+    ext_val <- svalue(file_export_ext_cbo)
+    del_val <- svalue(file_export_del_drp, index=TRUE)
+    data_val <- svalue(file_loaded_tbl)
+    chk_val <- svalue(file_export_chk)
+    
+    if(debug){
+      print("path_val")
+      print(path_val)
+      print("file_val")
+      print(file_val)
+      print("ext_val")
+      print(ext_val)
+      print("del_val")
+      print(del_val)
+      print("data_val")
+      print(data_val)
+    }
+    
+    # Create file names.
+    nbObj <- length(data_val)
+    if(chk_val){
+      #file_val <- deparse(substitute(data_val))
+      file_val <- data_val
+    } else {
+      file_val <-  unlist(strsplit(file_val, "\\|"))
+      if(length(file_val) == nbObj){
+        file_val <- make.names(file_val, unique=TRUE)
+      } else {
+        file_val <- make.names(rep(file_val[1], nbObj), unique=TRUE)
+      }
+    }
+    
+    if(debug){
+      print("file_val")
+      print(file_val)
+    }
+    
+    if(file_val != "" && path_val != expDefText){
+      
+      # Add trailing path separator if not present.
+      if(substr(path_val, nchar(path_val), nchar(path_val)+1) != .separator){
+        path_val <- paste(path_val, .separator, sep="")
+      }
+      
+      if(debug){
+        print("path_val")
+        print(path_val)
+      }
+      
+      # Use 'save' or 'write.table'.
+      if(ext_val == ".RData"){
+        
+        for(i in seq(along=nbObj)){
+          
+          # Construct complete file name.
+          complete_file_name <- paste(path_val, file_val[i], ".RData", sep="")
+          
+          save(list=data_val[i], file=complete_file_name, envir=.pcrsim_workspace)
+        }
+        
+      } else {
+        
+        # Assign a delimeter character.
+        if(del_val == 1){
+          delimeter <- "\t"   
+        } else if(del_val == 2){
+          delimeter <- " "
+        } else if(del_val == 3){
+          delimeter <- ","
+        } 
+        
+        if(debug){
+          print("del_val")
+          print(del_val)
+        }
+        
+        for(i in seq(along=nbObj)){
+          
+          # Construct complete file name.
+          complete_file_name <- paste(path_val, file_val[i], ext_val, sep="")
+          
+          write.table(x=get(data_val[i], envir=.pcrsim_workspace),
+                      file = complete_file_name,
+                      append = FALSE, quote = FALSE, sep = delimeter,
+                      dec = ".", row.names = FALSE,
+                      col.names = TRUE)
+        }
+      }
+      
+    } else {
+      
+      gmessage(message="File name and path must be provided.",
+               title="Error",
+               icon = "error")      
+    }    
+  } )
+  
   # PROFILE PARAMETERS ########################################################
   
   glabel("", container=profile_gf) # Adds some space.
@@ -193,7 +732,7 @@ pcrsim <- function(){
                         container=profile_grid_1,
                         anchor=c(-1 ,0))
   
-  profile_grid_1[2,2] <- profile_kit_drop <- gdroplist(items=getKit(), 
+  profile_grid_1[2,2] <- profile_kit_drop <- gdroplist(items=getParameter(), 
                                                          selected = 3,
                                                          editable = FALSE,
                                                          container = profile_grid_1) 
@@ -202,7 +741,7 @@ pcrsim <- function(){
   addHandlerChanged(profile_kit_drop, handler = function(h, ...) {
     val <- svalue (h$obj)
 
-    dnaProfile <- data.frame(Marker=getKit(val)$locus,
+    dnaProfile <- data.frame(Marker=getParameter(val)$locus,
                              Allele.1="NA",
                              Allele.2="NA",
                              stringsAsFactors=FALSE)
@@ -361,7 +900,7 @@ pcrsim <- function(){
     
     if (file.exists(val)){
       
-      dnaProfile <- import(resultFiles=val)
+      dnaProfile <- import(fileName=val)
       
       dnaProfile <- trim(data=dnaProfile, samples=NULL,
                          columns="Marker|Allele", ignoreCase=TRUE,
@@ -384,7 +923,7 @@ pcrsim <- function(){
 
     if (file.exists(val)){
         
-     dnaProfile <- import(resultFiles=val)
+     dnaProfile <- import(fileName=val)
 
       dnaProfile <- trim(data=dnaProfile, samples=NULL,
 			columns="Marker|Allele", ignoreCase=TRUE,
@@ -437,7 +976,7 @@ pcrsim <- function(){
   profile_grid_3[1,1] <- glabel("", container=profile_grid_3) # Adds some space.
   
   
-  simProfile <- data.frame(Marker=getKit(svalue(profile_kit_drop))$locus,
+  simProfile <- data.frame(Marker=getParameter(svalue(profile_kit_drop))$locus,
                                Allele.1="NA",
                                Allele.2="NA",
                                stringsAsFactors=FALSE)
@@ -922,11 +1461,18 @@ pcrsim <- function(){
   ce_grid_2[2,1] <- ce_kh_lbl <- glabel(text="Number of molecules -> peak height scaling constant:",
                                           container=ce_grid_2,
                                           anchor=c(-1 ,0))
-  ce_grid_2[2,2] <- ce_kh_txt <- gedit(text="55",
+  ce_grid_2[2,2] <- ce_kh_txt <- gedit(text="0.11915",
                                          width=ce_frame_2_txt_width,
                                          initial.msg="",
                                          container=ce_grid_2)
   
+  ce_grid_2[2,3] <- ce_kh_sd_lbl <- glabel(text="Standard deviation:",
+                                        container=ce_grid_2,
+                                        anchor=c(-1 ,0))
+  ce_grid_2[2,4] <- ce_kh_sd_txt <- gedit(text="0.01172",
+                                       width=ce_frame_2_txt_width,
+                                       initial.msg="",
+                                       container=ce_grid_2)
   
   ce_grid_2[3,1] <- glabel("", container=ce_grid_2) # Adds some space.
   
@@ -1007,6 +1553,7 @@ pcrsim <- function(){
     # Pass the total number of molecules needed to trigger a signal.
     val_ce_detect <- as.numeric(svalue(ce_detect_txt)) * val_amp_tvol
     val_ce_kh <- as.numeric(svalue(ce_kh_txt))
+    val_ce_kh_sd <- as.numeric(svalue(ce_kh_sd_txt))
     val_sim <- as.numeric(svalue(sim_sim_txt))
     
     if(!is.numeric(val_ce_detect)){
@@ -1062,18 +1609,24 @@ pcrsim <- function(){
                                   celldna=val_celldna,
                                   cyc=val_amp_pcr,
                                   tDetect=val_ce_detect,
-                                  KH=val_ce_kh)
+                                  scaling=val_ce_kh,
+                                  scaling.sd=val_ce_kh)
   
+      if(debug){
+        print("simData")
+        print(simData)
+        
+      }
       
       # Update result table.
-      sim_res_tbl[,] <- simData
+      sim_res_tbl[] <- simData
   
       if(svalue(sim_sim_chk)){
         # Generate EPG.      
         simEPG <<- generateEPG(data=simData, 
                               kit=val_kit, 
                               plotTitle=val_title, 
-                              debugInfo=FALSE)
+                              debug=debug)
         
       }
       
@@ -1357,7 +1910,7 @@ Please use save as ASCII or RData.",
     simEPG <<- generateEPG(data=simData, 
                           kit=val_kit, 
                           plotTitle=val_title, 
-                          debugInfo=FALSE)
+                          debug=debug)
     
   } )
   
@@ -1437,6 +1990,230 @@ Please use save as ASCII or RData.",
     
   } )
   
+  # MAIN EVENT HANDLERS #########################################################
+
+  addHandlerChanged(nb, handler = function (h, ...) {
+    
+    if(debug){
+      print("NOTEBOOK CHANGED")
+      print(if(is.null(h$pageno)) svalue(h$obj) else h$pageno)
+    }
+    
+    # Refresh depending on active tab.
+    #tab <- svalue(nb)
+    tab <- if(is.null(h$pageno)) svalue(h$obj) else h$pageno
+    tabName <- names(nb)[tab]
+    
+    if(tabName == .file_tab_name){
+      
+      .refreshLoaded()
+      .refreshWs()
+      
+    }
+    
+  })
+  
+  addHandlerFocus(w, handler = function (h, ...) {
+    
+    if(debug){
+      print(paste("IN:", match.call()[[1]]))
+      print("FOCUS")
+    }
+    
+    # Refresh depending on active tab.
+    tab <- svalue(nb)
+    tabName <- names(nb)[tab]
+    
+    if(tabName == .file_tab_name){
+      
+      .refreshLoaded()
+      .refreshWs()
+      
+    }
+    
+  })
+  
+  .refreshWs <- function(){
+    
+    # Get data frames in global workspace.
+    dfs <- listObjects(env=.GlobalEnv, objClass="data.frame")
+    
+    if(!is.null(dfs)){
+      
+      blockHandler(file_ws_drp)
+      
+      # Populate drop list.
+      file_ws_drp[] <- c("<Select dataframe>", dfs)
+      
+      # Select first item.
+      svalue(file_ws_drp, index=TRUE) <- 1 
+      
+      unblockHandler(file_ws_drp)
+      
+    }
+  }
+  
+  .refreshLoaded <- function(){
+    
+    if(debug){
+      print(paste("IN:", match.call()[[1]]))
+    }
+    
+    # Get data frames.
+    dfs <- listObjects(env=.pcrsim_workspace, objClass="data.frame")
+    
+    if(!is.null(dfs)){
+      
+      #blockHandler(file_loaded_tbl)
+      
+      #delete(file_loaded_f, file_loaded_tbl)
+      #file_loaded_tbl <<- gtable(items=dfs, 
+      #                        multiple = TRUE,
+      #                        container = file_loaded_f) 
+      
+      # Populate table.
+      file_loaded_tbl[] <- dfs
+      
+      #unblockHandler(file_loaded_tbl)
+      
+    }
+  }
+  
+  .loadSavedSettings <- function(){
+        
+    # TAB PROFILE:
+    if(exists(".profile_tbl", envir=.pcrsim_workspace)){
+      profile_tbl[,] <- get(".profile_tbl", envir=.pcrsim_workspace)
+    }
+
+    # TAB SAMPLE:
+    if(exists(".sample_gf_sample_name", envir=.pcrsim_workspace)){
+      svalue(sample_name_txt) <- get(".sample_gf_sample_name", envir=.pcrsim_workspace)
+    }
+    if(exists(".sample_gf_conc", envir=.pcrsim_workspace)){
+      svalue(sample_conc_txt) <- get(".sample_gf_conc", envir=.pcrsim_workspace)
+    }
+    if(exists(".sample_gf_conc_sd", envir=.pcrsim_workspace)){
+      svalue(sample_conc_sd_txt) <- get(".sample_gf_conc_sd", envir=.pcrsim_workspace)
+    }
+    if(exists(".sample_gf_celldna", envir=.pcrsim_workspace)){
+      svalue(sample_celldna_txt) <- get(".sample_gf_celldna", envir=.pcrsim_workspace)
+    }
+    if(exists(".sample_gf_ncells", envir=.pcrsim_workspace)){
+      svalue(sample_ncells_txt) <- get(".sample_gf_ncells", envir=.pcrsim_workspace)
+    }
+    if(exists(".sample_gf_ncells_sd", envir=.pcrsim_workspace)){
+      svalue(sample_ncells_sd_txt) <- get(".sample_gf_ncells_sd", envir=.pcrsim_workspace)
+    }
+    if(exists(".sample_gf_degS", envir=.pcrsim_workspace)){
+      svalue(sample_degS_txt) <- get(".sample_gf_degS", envir=.pcrsim_workspace)
+    }
+    if(exists(".sample_gf_degS_sd", envir=.pcrsim_workspace)){
+      svalue(sample_degS_sd_txt) <- get(".sample_gf_degS_sd", envir=.pcrsim_workspace)
+    }
+    if(exists(".sample_gf_degI", envir=.pcrsim_workspace)){
+      svalue(sample_degI_txt) <- get(".sample_gf_degI", envir=.pcrsim_workspace)
+    }
+    if(exists(".sample_gf_degI_sd", envir=.pcrsim_workspace)){
+      svalue(sample_degI_sd_txt) <- get(".sample_gf_degI_sd", envir=.pcrsim_workspace)
+    }
+    
+    # TAB EXTRACTION:
+    if(exists(".ex_eff", envir=.pcrsim_workspace)){
+      svalue(ex_eff_txt) <- get(".ex_eff", envir=.pcrsim_workspace)
+    }
+    if(exists(".ex_eff_sd", envir=.pcrsim_workspace)){
+      svalue(ex_eff_sd_txt) <- get(".ex_eff_sd", envir=.pcrsim_workspace)
+    }
+    if(exists(".ex_vol", envir=.pcrsim_workspace)){
+      svalue(ex_vol_txt) <- get(".ex_vol", envir=.pcrsim_workspace)
+    }
+    if(exists(".ex_vol_sd", envir=.pcrsim_workspace)){
+      svalue(ex_vol_sd_txt) <- get(".ex_vol_sd", envir=.pcrsim_workspace)
+    }
+    
+    # TAB AMPLIFICATION:
+    if(exists(".amp_vol", envir=.pcrsim_workspace)){
+      svalue(amp_vol_txt) <- get(".amp_vol", envir=.pcrsim_workspace)
+    }
+    if(exists(".amp_vol_sd", envir=.pcrsim_workspace)){
+      svalue(amp_vol_sd_txt) <- get(".amp_vol_sd", envir=.pcrsim_workspace)
+    }
+    if(exists(".amp_cyc_sb", envir=.pcrsim_workspace)){
+      svalue(cyc_sb) <- get(".amp_cyc_sb", envir=.pcrsim_workspace)
+    }
+    if(exists(".amp_tvol", envir=.pcrsim_workspace)){
+      svalue(amp_tvol_txt) <- get(".amp_tvol", envir=.pcrsim_workspace)
+    }
+    
+    # TAB ANALYSIS:
+    if(exists(".ce_detect", envir=.pcrsim_workspace)){
+      svalue(ce_detect_txt) <- get(".ce_detect", envir=.pcrsim_workspace)
+    }
+    if(exists(".ce_kh", envir=.pcrsim_workspace)){
+      svalue(ce_kh_txt) <- get(".ce_kh", envir=.pcrsim_workspace)
+    }
+    if(exists(".ce_kh_sd", envir=.pcrsim_workspace)){
+      svalue(ce_kh_sd_txt) <- get(".ce_kh_sd", envir=.pcrsim_workspace)
+    }
+    
+    # TAB SIMULATION:
+    if(exists(".sim_sim", envir=.pcrsim_workspace)){
+      svalue(sim_sim_txt) <- get(".sim_sim", envir=.pcrsim_workspace)
+    }
+    if(exists(".sim_sim_chk", envir=.pcrsim_workspace)){
+      svalue(sim_sim_chk) <- get(".sim_sim_chk", envir=.pcrsim_workspace)
+    }
+    
+    if(debug){
+      print("Saved settings loaded!")
+    }
+    
+  }
+  
+  .saveSettings <- function(){
+
+    # TAB PROFILE:
+    assign(x=".profile_tbl", value=profile_tbl[,], envir=.pcrsim_workspace)
+    
+    # TAB SAMPLE:
+    assign(x=".sample_gf_sample_name", value=svalue(sample_name_txt), envir=.pcrsim_workspace)
+    assign(x=".sample_gf_conc", value=svalue(sample_conc_txt), envir=.pcrsim_workspace)
+    assign(x=".sample_gf_conc_sd", value=svalue(sample_conc_sd_txt), envir=.pcrsim_workspace)
+    assign(x=".sample_gf_celldna", value=svalue(sample_celldna_txt), envir=.pcrsim_workspace)
+    assign(x=".sample_gf_ncells", value=svalue(sample_ncells_txt), envir=.pcrsim_workspace)
+    assign(x=".sample_gf_ncells_sd", value=svalue(sample_ncells_sd_txt), envir=.pcrsim_workspace)
+    assign(x=".sample_gf_degS", value=svalue(sample_degS_txt), envir=.pcrsim_workspace)
+    assign(x=".sample_gf_degS_sd", value=svalue(sample_degS_sd_txt), envir=.pcrsim_workspace)
+    assign(x=".sample_gf_degI", value=svalue(sample_degI_txt), envir=.pcrsim_workspace)
+    assign(x=".sample_gf_degI_sd", value=svalue(sample_degI_sd_txt), envir=.pcrsim_workspace)
+    
+    # TAB EXTRACTION:
+    assign(x=".ex_eff", value=svalue(ex_eff_txt), envir=.pcrsim_workspace)
+    assign(x=".ex_eff_sd", value=svalue(ex_eff_sd_txt), envir=.pcrsim_workspace)
+    assign(x=".ex_vol", value=svalue(ex_vol_txt), envir=.pcrsim_workspace)
+    assign(x=".ex_vol_sd", value=svalue(ex_vol_sd_txt), envir=.pcrsim_workspace)
+    
+    # TAB AMPLIFICATION:
+    assign(x=".amp_vol", value=svalue(amp_vol_txt), envir=.pcrsim_workspace)
+    assign(x=".amp_vol_sd", value=svalue(amp_vol_sd_txt), envir=.pcrsim_workspace)
+    assign(x=".amp_cyc_sb", value=svalue(cyc_sb), envir=.pcrsim_workspace)
+    assign(x=".amp_tvol", value=svalue(amp_tvol_txt), envir=.pcrsim_workspace)
+    
+    # TAB ANALYSIS:
+    assign(x=".ce_detect", value=svalue(ce_detect_txt), envir=.pcrsim_workspace)
+    assign(x=".ce_kh", value=svalue(ce_kh_txt), envir=.pcrsim_workspace)
+    assign(x=".ce_kh_sd", value=svalue(ce_kh_sd_txt), envir=.pcrsim_workspace)
+    
+    # TAB SIMULATION:
+    assign(x=".sim_sim", value=svalue(sim_sim_txt), envir=.pcrsim_workspace)
+    assign(x=".sim_sim_chk", value=svalue(sim_sim_chk), envir=.pcrsim_workspace)
+    
+    if(debug){
+      print("Settings saved!")
+    }
+    
+  }
   
   # END GUI ###################################################################
   

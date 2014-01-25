@@ -2,9 +2,8 @@
 \alias{findPCRprob}
 \title{Find PCR probabilities}
 \usage{
-  findPCRprob(sim, targetLb, acceptedDev = 0.01,
-    stepSize = 0.001, seed = 0.75, maxPCRprob = 0.95,
-    progress = FALSE, ...)
+findPCRprob(sim, targetLb, acceptedDev = 0.01, stepSize = 0.001,
+  seed = 0.75, maxPCRprob = 0.95, progress = FALSE, ...)
 }
 \arguments{
   \item{sim}{integer for number of simulations.}
@@ -30,18 +29,18 @@
   \code{\link{simPCR}}}
 }
 \value{
-  data.frame with additional columns 'N' and 'Mean'.
+data.frame with additional columns 'N' and 'Mean'.
 }
 \description{
-  \code{findPCRprob} Find values for the PCR efficiency
-  parameter for simPCR that satisfy the target locus
-  balances.
+\code{findPCRprob} Find values for the PCR efficiency
+parameter for simPCR that satisfy the target locus
+balances.
 }
 \details{
-  The interlocus balance for a kit should be characterised
-  during the internal validation of the kit. This function
-  search for PCR efficiency parameters that upon PCR
-  simulation result in similar locus balances.
+The interlocus balance for a kit should be characterised
+during the internal validation of the kit. This function
+search for PCR efficiency parameters that upon PCR
+simulation result in similar locus balances.
 }
 \examples{
 \dontrun{

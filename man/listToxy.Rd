@@ -2,7 +2,7 @@
 \alias{listToxy}
 \title{List to xy values}
 \usage{
-  listToxy(ylist, xval, elements = TRUE)
+listToxy(ylist, xval, elements = TRUE)
 }
 \arguments{
   \item{ylist}{list of y values.}
@@ -14,15 +14,15 @@
   sublists.}
 }
 \value{
-  data.frame with columns 'X' and 'Y'.
+data.frame with columns 'X' and 'Y'.
 }
 \description{
-  \code{listToxy} combines matching x values to a list of y
-  values.
+\code{listToxy} combines matching x values to a list of y
+values.
 }
 \details{
-  Combines a list of Y values with a vector of matching X
-  values into a data frame with x and y values suitable for
-  plotting.
+Combines a list of Y values with a vector of matching X
+values into a data frame with x and y values suitable for
+plotting.
 }
 

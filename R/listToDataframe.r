@@ -4,10 +4,11 @@
 
 ################################################################################
 # CHANGE LOG
-# 04: Roxygenized.
-# 03: Added if-case to return correct data type. stringsAsFactors=FALSE
-# 02: New parameter 'colName'
-# 01: First version.
+# 25.01.2014: Updated for compatibility with strvalidator 1.0.0.
+# <25.01.2014: Roxygenized.
+# <25.01.2014: Added if-case to return correct data type. stringsAsFactors=FALSE
+# <25.01.2014: New parameter 'colName'
+# <25.01.2014: First version.
 
 #' @title List to data frame
 #'
@@ -29,8 +30,6 @@
 
 listToDataframe <- function(data, kit, colName=NA){
 
-  require(strvalidator)
-  
 	# Create a data frame for the result.
 	newData <- data.frame(NA, NA)
 
@@ -41,7 +40,7 @@ listToDataframe <- function(data, kit, colName=NA){
 	newData <- newData[-1,]
 
 	# Get locus names.
-	markers <- getKit(kit)$locus
+	markers <- getParameter(kit)$locus
 
 	# Check if matching data.
 	if(length(data)==length(markers)){

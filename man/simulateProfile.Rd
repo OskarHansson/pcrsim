@@ -2,12 +2,11 @@
 \alias{simulateProfile}
 \title{Simulate DNA profiles}
 \usage{
-  simulateProfile(alleles, sample.name = NULL, ncells = NA,
-    ncells.sd = 0, conc = NA, conc.sd = 0, intercept = NA,
-    intercept.sd = 0, slope = NA, slope.sd = 0,
-    exprob = NA, exprob.sd = 0, volume = NA, volume.sd = 0,
-    aliq = NA, aliq.sd = 0, simulations = 1, kit = NA,
-    celldna = 0.006, ...)
+simulateProfile(alleles, sample.name = NULL, ncells = NA, ncells.sd = 0,
+  conc = NA, conc.sd = 0, intercept = NA, intercept.sd = 0,
+  slope = NA, slope.sd = 0, exprob = NA, exprob.sd = 0, volume = NA,
+  volume.sd = 0, aliq = NA, aliq.sd = 0, scaling = NA, scaling.sd = 0,
+  simulations = 1, kit = NA, celldna = 0.006, ...)
 }
 \arguments{
   \item{alleles}{list of alleles per marker.}
@@ -52,6 +51,12 @@
   \item{aliq.sd}{numeric, standard deviation for volume of
   DNA extract.}
 
+  \item{scaling}{numeric, scaling factor for number of
+  molecules to peak height.}
+
+  \item{scaling.sd}{numeric, standard deviation for scaling
+  factor.}
+
   \item{kit}{string or integer specifying an STR typing
   kit.}
 
@@ -64,16 +69,16 @@
   \code{\link{simPCR}}}
 }
 \value{
-  list with simulation results.
+list with simulation results.
 }
 \description{
-  \code{simulateProfile} simulates entire DNA profiles.
+\code{simulateProfile} simulates entire DNA profiles.
 }
 \details{
-  Simulates the peak heights for a single person profile.
-  Integration of degradation and interlocus balance. Handle
-  missing alleles. Only single person profiles,
-  unique(alleles) will be applied.
+Simulates the peak heights for a single person profile.
+Integration of degradation and interlocus balance. Handle
+missing alleles. Only single person profiles,
+unique(alleles) will be applied.
 }
 \examples{
 # Define a DNA profile.

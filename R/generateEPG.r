@@ -1,16 +1,20 @@
 ################################################################################
 # TODO LIST
 # TODO: Don't calculate Size if present in data.
+# TODO: Can't handle no peaks in a dye channel.
+# NB! Missing alleles should be empty string ""
+# (then they will not be visible label and not generate error in ggplot2)
 
 ################################################################################
 # CHANGE LOG
-# 07: Removed 10% margin because of aes_string
-# 06: Conversion from 'fat' to 'slim' format.
-# 05: Roxygenized.
-# 04: Automatic detects distributions.
-# 03: Distributions.
-# 02: Marker ranges and allele names.
-# 01: First version
+# 25.01.2014: Updated for compatibility with strvalidator 1.0.0.
+# <25.01.2014: Removed 10% margin because of aes_string
+# <25.01.2014: Conversion from 'fat' to 'slim' format.
+# <25.01.2014: Roxygenized.
+# <25.01.2014: Automatic detects distributions.
+# <25.01.2014: Distributions.
+# <25.01.2014: Marker ranges and allele names.
+# <25.01.2014: First version
 
 #' @title Generate EPG
 #'
@@ -25,13 +29,16 @@
 #' @param kit string or integer representing the STR typing kit.
 #' @param plotTitle string providing the title for the EPG.
 #' @param peaks logical, TRUE plot peaks using mean peak height for distributions.
-#' @param debugInfo logical for printing debug information to the console.
+#' @param debug logical for printing debug information to the console.
 #' 
 #' @return NULL.
 #' 
 #' @keywords internal
 #' @export
 #' @examples
+#' # Load package.
+#' library(pcrsim)
+#' library(strvalidator)
 #' # Load genotyping data.
 #' data("set1")
 #' # Extract a sample.
@@ -40,14 +47,10 @@
 #' generateEPG(data=mySample, kit="ESX17")
 
 
-generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
+generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debug=FALSE){
 
-  require(ggplot2)
-  require(data.table)
-  require(strvalidator)
-  
   # Debug info.
-	if(debugInfo){
+	if(debug){
 	  print(paste("IN:", match.call()[[1]]))
 		print("data:")
 		print(data)
@@ -58,8 +61,17 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
 		flush.console()
 	} else {}
 
-	# Constants.
-	if(nrow(data[duplicated(data, MARGINS=c(1,2)),]) > 0){
+  # Convert NA to empty string to prevent ggplot2 error (and prevent allele labels)
+  data[is.na(data)] <- ""
+
+  # Debug info.
+  if(debug){
+    print("data2:")
+    print(data)
+  }
+  
+	# Constants. # TODO: Better approach to determine if sim# > 1.
+	if(nrow(data[duplicated(data[!data$Allele=="",], MARGINS=c("Marker","Allele")),]) > 0){
 		distribution=TRUE
 	} else {
 		distribution=FALSE
@@ -67,23 +79,23 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
 	mSpace <- 1.1  # Factor to resize plot area.
 	
 	# Get kit information.
-	kitInfo <- getKit(kit)
+	kitInfo <- getParameter(kit)
 
 	# Check if 'fat' format.
 	if(length(grep("Allele", names(data))) > 1) {
 	  
 	  # Debug info.
-	  if(debugInfo){
+	  if(debug){
 	    print("alleles is 'fat' format:")
 	    print(data)
 	    flush.console()
 	  } else {}
 	  
 	  # Slim data frame.
-	  data <- slim(data=data, fix=c("Marker"), stack=c("Allele","Height"))
+	  data <- slim(data=data, fix=c("Marker"), stack=c("Allele","Height"), debug=debug)
 	  
 	  # Debug info.
-	  if(debugInfo){
+	  if(debug){
 	    print("convert to 'slim' format:")
 	    print(data)
 	    flush.console()
@@ -94,7 +106,12 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
 	# Add unique 'Id' column (combine 'Allele' and 'Marker') for grouping.
 	data$Id <- paste(data$Allele, data$Marker, sep="") 
 
-
+  # Debug info.
+  if(debug){
+    print("data3:")
+    print(data)
+  }
+  
 	# Calculate size of alleles.
 	data <- alleleToSize(data=data, kit=kit)
 
@@ -138,31 +155,33 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
 	# to a new data frame for handling allele names.
 	alleleInfo <- unique(data[ , c("Marker","Allele")])
 	# Add dye information.
-	alleleInfo <- addDye(data=alleleInfo, kit=kit)
+  # NB! addDye --> addColor
+  alleleInfo <- addColor(data=alleleInfo, kit=kit, need="Dye")
 	# Calculate size of alleles.
 	alleleInfo <- alleleToSize(data=alleleInfo, kit=kit)
   # Replace NA with the smallest size in kit (plot can't handle all NAs).
   alleleInfo$Size[is.na(alleleInfo$Size)] <- min(kitInfo$rangeMin)
 
 	# Add dye information.
-	data <- addDye(data=data, kit=kit)
+	data <- addColor(data=data, kit=kit)
 	if(distribution){
-		dataMean <- addDye(data=dataMean, kit=kit)
+		dataMean <- addColor(data=dataMean, kit=kit)
 	}
 
 	# Add color information.
-	data <- dyeToColor(data=data)
-	if(distribution){
+  # NB! dyeToColor --> use addColor
+  #data <- dyeToColor(data=data)
+  if(distribution){
 		dataMean <- dyeToColor(data=dataMean)
 	}
 
 	# Get colors.
-	manualColors <- unique(data$Color)	
-
+	manualColors <- unique(data$R.Color)	
+# NB! sortMarkers --> sortMarker
 	# Sort 'Marker' and 'Dye' factors according 'kit'.
-	data <- sortMarkers(data=data, kit=kit)
+	data <- sortMarker(data=data, kit=kit)
 	if(distribution){
-		dataMean <- sortMarkers(data=dataMean, kit=kit)
+		dataMean <- sortMarker(data=dataMean, kit=kit)
 	}
 
 	# Get information for annotation of markers.
@@ -187,7 +206,7 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
   mYmax <- as.numeric(mYmax)
   
 	# Debug info.
-	if(debugInfo){
+	if(debug){
 	  print("data:")
 	  print(data)
 	  print(str(data))
@@ -217,7 +236,7 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
 	      Text=myText)			        # Marker names.
 
 	# Debug info.
-	if(debugInfo){
+	if(debug){
 		print("markerRanges:")
 		print(markerRanges)
 		print(str(markerRanges))
@@ -260,7 +279,7 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
 
 	# Add allele names.
 	myPlot <- myPlot + geom_text(aes_string(label="Allele", x="Size", y=-Inf), 
-						data=alleleInfo, size=2, vjust=0)
+						data=alleleInfo, size=3, vjust=0)
 
 	# Facet according to dye channel.
 	myPlot <- myPlot + facet_grid(Dye ~ Marker) + 
@@ -281,7 +300,7 @@ generateEPG <- function(data, kit, plotTitle=NULL, peaks=TRUE, debugInfo=FALSE){
 	print(myPlot)
 
 	# Debug info.
-	if(debugInfo){
+	if(debug){
 	  print(paste("EXIT:", match.call()[[1]]))
 		flush.console()
 	} else {}

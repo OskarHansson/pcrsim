@@ -2,24 +2,24 @@
 \alias{addSimAlleles}
 \title{Add simulated alleles}
 \usage{
-  addSimAlleles(data)
+addSimAlleles(data)
 }
 \arguments{
   \item{data}{List returned from \code{simPCR}.}
 }
 \value{
-  list the totel peak height for each marker.
+list the totel peak height for each marker.
 }
 \description{
-  \code{addSimAlleles} Adds the peak height from the two
-  simulated alleles from simPCR and returns a list of the
-  total peak heights for the simulated marker.
+\code{addSimAlleles} Adds the peak height from the two
+simulated alleles from simPCR and returns a list of the
+total peak heights for the simulated marker.
 }
 \details{
-  'data' contains short tandem repeat (STR) marker/locus
-  names in the required column. Based on the provided kit
-  name other information is attached to 'data' in new
-  columns.
+'data' contains short tandem repeat (STR) marker/locus
+names in the required column. Based on the provided kit
+name other information is attached to 'data' in new
+columns.
 }
 \examples{
 # Create test data.

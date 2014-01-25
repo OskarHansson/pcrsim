@@ -22,7 +22,7 @@
 #' @name pcrsim-package
 #' @author Oskar Hansson \email{oskar.hansson@@fhi.no}
 #' @section Warning: This package is experimental and has not been thoroughly validated.
-#' @import  ggplot2 data.table gWidgets RGtk2 strvalidator
+#' @import  ggplot2 data.table gWidgets strvalidator
 #' @keywords package
 #' @references  Gill, Peter, James Curran, and Keith Elliot.
 #' \\u0022 A Graphical Simulation Model of the Entire DNA Process Associated with

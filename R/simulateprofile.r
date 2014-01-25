@@ -10,6 +10,8 @@
 
 ################################################################################
 # CHANGE LOG
+# 25.01.2014: Updated for compatibility with strvalidator 1.0.0.
+# 24.06.2013: Added parameters 'scaling' and 'scaling.sd'.
 # 24.04.2013: Added parameter sample.name and column Sample.Name to result (sim# as suffix).
 # <24.04.2013: Prevent valus >1 x[x>1] <- 1 for probabilities.
 # <24.04.2013: Distributions for degradation is working.
@@ -52,6 +54,8 @@
 #' @param volume.sd, numeric, standard deviation for the final extraction volume.
 #' @param aliq numeric, volume of DNA extract taken for PCR amplification.
 #' @param aliq.sd numeric, standard deviation for volume of DNA extract.
+#' @param scaling numeric, scaling factor for number of molecules to peak height.
+#' @param scaling.sd numeric, standard deviation for scaling factor.
 #' @param kit string or integer specifying an STR typing kit.
 #' @param simulations integer, number of simulations.
 #' @param celldna, numeric giving the DNA content of a cell.
@@ -81,14 +85,12 @@ simulateProfile<-function(alleles, sample.name=NULL,
                           exprob=NA, exprob.sd=0,
                           volume=NA, volume.sd=0,
                           aliq=NA, aliq.sd=0,
+                          scaling=NA, scaling.sd=0,
                           simulations=1, kit=NA,
                           celldna=0.006, ...){
 
   # Constants.
   debug=FALSE
-  
-  # Load dependencies.
-  require(strvalidator)
   
   # Debug info.
   if(debug){
@@ -111,6 +113,7 @@ simulateProfile<-function(alleles, sample.name=NULL,
   rintercept <- NULL
   rslope <- NULL
   allelesDf <- NULL
+  rscaling <- NA       # Can't be NULL. 
 
   # Pre-allocate result data frame.
   # Create an empty data frame 3 times the length of 'data'.
@@ -126,7 +129,7 @@ simulateProfile<-function(alleles, sample.name=NULL,
   
   # Get kit information.
   if(!is.null(kit) && !is.na(kit)){
-    kitInfo <- getKit(kit)
+    kitInfo <- getParameter(kit)
     interLocusBalance <- kitInfo$probPCR
     markers <- kitInfo$locus
   } else{
@@ -276,7 +279,7 @@ simulateProfile<-function(alleles, sample.name=NULL,
 
   }
 
-  # DEGRADATION ---------------------------------------------------
+  # DEGRADATION ---------------------------------------------------------------
   
 	if(degraded){
 
@@ -295,6 +298,16 @@ simulateProfile<-function(alleles, sample.name=NULL,
 		}
 	}
 
+  # SCALING FACTOR ------------------------------------------------------------
+  
+  if(!is.null(scaling) && !is.na(scaling)){
+    
+    # Draw random scaling factors for each simulation.
+    rscaling <- rnorm(simulations, scaling, scaling.sd)
+    rscaling[rscaling < 0] <- 0
+    
+  }
+  
   # DEBUG ---------------------------------------------------------------------
   
   # Debug info.
@@ -319,6 +332,8 @@ simulateProfile<-function(alleles, sample.name=NULL,
     print(head(conc))
     print("rvolume:")
     print(head(rvolume))
+    print("rscaling:")
+    print(head(rscaling))
     flush.console()
   }
   
@@ -441,7 +456,7 @@ simulateProfile<-function(alleles, sample.name=NULL,
   
   			# Simulate pcr for an allele , the specified number of times.
   			tmpPH <- simPCR(ncells=cQuant, probEx=rexprob, probAlq=paliq, probPCR=cLb, 
-                         sim=simulations, ...)
+                         sim=simulations, KH=rscaling, ...)
   
         
   			# Debug info.
