@@ -1,278 +1,783 @@
 ################################################################################
 # TODO LIST
-# TODO: remove vectorization (not possible in the fixed loop '13') Add stutters.
-# TODO: Validate and calibrate the model.
-# TODO: Clean up code.
-# TODO: Implement CE parameters?
-
-# Remember: x*y = exp(log(x)+log(y))
+# TODO: Add basepair dependent pcr/stutter probability (regression). Will
+#   be much slower, but more realistic.
+# TODO: Enable an arbitrary number of stutters (with different probability).
+# TODO: Stutters: Handle more than just -1 repeats.
+# TODO: Stutters: Handle more than just one regression per marker (complex repeats).
 
 ################################################################################
-# CHANGE LOG
-# 24.06.2013: Changed default for 'tDetect' and 'KH' to 'NA'. Only applied if not 'NA'.
-# 07.05.2013: Formula for calculating rfu changed
-#             from: log((tmpA+tDetect)/tDetect) * KH
-#             to: (tmpA/tDetect) * KH
-# <07.05.2013: Fixed compatibility issue with R>=3 (rbinom returns integer -> NA for large numbers)
-# <07.05.2013: Added more debugging and verifications.
-# <07.05.2013: Roxygenized.
-# <07.05.2013: Modelling degradation by giving ncells(quant) per allele.
-#              Does not work for sperm cells...
+# NOTES
+# Stutter simulation require package  'mc2d' + dep. 'mvtnorm'
 
+################################################################################
+# CHANGE LOG (10 last changes)
+# 14.04.2016: Version 1.0.0 released.
+# 14.04.2016: Rounded the probability matrix to avoid problems with numerical representation.
+# 16.11.2015: Added parameter 'method' for 'getParameter'.
+# 27.01.2015: Handle aritmetic errors in probabilities, P(no amp) could be < 0.
+# 26.08.2014: More robust definition of .rows (can be different per sample).
+# 18.08.2014: Added stutter simulation using rmultinomial in package mc2d.
+# 28.02.2014: First version.
 
-#' @title PCR simulator
+#' @title PCR Simulator
 #'
-#' @description
-#' \code{simPCR} simulates the PCR process.
+#' @description Simulates the Polymerase Chain Reaction (PCR) process.
 #'
-#' @details
-#' Based on \code{simPCR2} from the \code{forensim} package by Hinda Haned.
-#' Simulates PCR for a single allele by a series of binomial distributions.
+#' @details Simulates the PCR process by a series of binomial distributions,
+#' or multinomial distributions if \code{stutter=TRUE}. The PCR probability/
+#' efficiency can be specified globally or per locus. Probability of stutter
+#' formation can be specified globally, per locus, or per locus and allele size.
 #' 
-#' @param ncells integer for number of cells/dna molecules for the current allele.
-#' Can be vector of integers giving the number of cells in each simulation.
-#' @param probEx numeric for probability that an allele survives the extraction
-#'  (extraction efficiency).
-#' Can be vector of numeric giving the probability in each simulation.
-#' @param probAlq numeric, probability that an allele is aliquoted into the PCR reaction.
-#' Can be vector of numeric giving the probability in each simulation.
-#' @param probPCR numeric, probability that an allele is amplified during a PCR cycle (PCR efficiency).
-#' Can be vector of numeric giving the probability in each simulation.
-#' @param cyc integer, number of PCR cycles.
-#' @param tDetect integer, detection threshold. Number of molecules needed to trigger a signal.
-#' @param KH integer, correlation factor for number of molecules to peak height.
-#' @param sim integer, number of simulations.
-#' @param dip logical flagging for diploid cells (haploid cells are currently not implemented)
+#' @param data data.frame with simulated data. Preferably output from \code{\link{simExtraction}}.
+#' Required columns are 'Marker', 'Allele', 'Sim', Volume', and 'DNA'.
+#' @param kit string representing the typing kit used, or data.frame with kit characteristics. 
+#' Provides locus specific PCR efficiency and stutter probabilities.
+#' If NULL \code{pcr.prob} and \code{stutter.prob} will be used for all loci.
+#' @param method string representing the method of the specified kit.
+#' @param pcr.prob numeric for the PCR efficiency (probability amplifying a DNA molecule).
+#' Only used if \code{kit} is NULL.
+#' @param sd.pcr.prob numeric for the standard deviation of \code{pcr.prob}.
+#' @param stutter.prob numeric for the probability generating a stutter.
+#' Only used if \code{kit} is NULL.
+#' @param sd.stutter.prob numeric for the standard deviation of \code{stutter.prob}.
+#' @param stutter.reg logical to use regression for stutter probability.
+#' @param pcr.cyc numeric for the number of PCR cycles.
+#' @param vol.aliq numeric for the aliquot extract forwarded to PCR.
+#' @param sd.vol.aliq numeric for the standard deviation of \code{vol.aliq}.
+#' @param vol.pcr numeric for the total PCR reaction volume.
+#' @param sd.vol.pcr numeric for the standard deviation of \code{vol.pcr}.
+#' @param stutter logical to simulate stutters.
+#' @param debug logical to print debug information.
 #' 
-#' @return list with simulation results.
+#' @return data.frame with simulation results in columns 'PCR.Pip.Vol', 'PCR.Aliq.Prob',
+#' 'PCR.DNA', 'PCR.Vol', 'PCR.Prob', 'PCR.Prob.Stutter', 'PCR.Amplicon', 'PCR.Stutter.1',
+#' 'PCR.Stutter.2', and updated 'DNA' column (added if needed).
+#' 
+#' @importFrom plyr count
+# @importFrom strvalidator addSize getKit
+#' @importFrom utils head tail str
+#' @importFrom stats rbinom rnorm
+#' 
 #' @export
+#' 
+#' @seealso \code{\link{simExtraction}}
+#' 
 #' @examples
-#' simPCR(ncells=100, probEx=0.7, probAlq=0.1, probPCR=0.85, sim=100)
+#' # Create a data frame with a DNA profile.
+#' markers = rep(c("D3S1358","TH01","FGA"), each=2)
+#' alleles = c(15,18,6,10,25,25)
+#' df <- data.frame(Marker=markers, Allele=alleles)
+#' 
+#' # Simulate profile.
+#' smpl <- simProfile(data=df, sim=10)
+#' 
+#' # Simulate sample.
+#' smpl <- simSample(data=smpl, cells=1000, sd.cells=200)
+#' 
+#' # Simulate extraction.
+#' smpl <- simExtraction(data=smpl, vol.ex=200, sd.vol=10, prob.ex=0.6, sd.prob=0.1)
+#' 
+#' # Simulate PCR with 95% PCR efficiency and 0.2% stutter probability for all loci.
+#' res <- simPCR(data=smpl, pcr.prob=0.95, pcr.cyc=30, vol.aliq=10,
+#'  sd.vol.aliq=0.1, vol.pcr=25, sd.vol.pcr=1)
+#' 
+#' # Simulate PCR with locus specific PCR efficiency and stutter probability.
+#' res <- simPCR(data=smpl, kit="ESX17", pcr.cyc=30, vol.aliq=10,
+#'  sd.vol.aliq=0.1, vol.pcr=25, sd.vol.pcr=1)
+#' 
+#' # Simulate PCR with locus specific PCR efficiency and stutter probability.
+#' res <- simPCR(data=smpl, kit="ESX17", pcr.cyc=30, vol.aliq=10,
+#'  sd.vol.aliq=0.1, vol.pcr=25, sd.vol.pcr=1, stutter.reg=TRUE)
 
-
-simPCR<-function(ncells, probEx=1, probAlq=1, probPCR=1, cyc=28, 
-		tDetect=NA, dip=TRUE, KH=NA, sim=1) {
-
-  # Constants.
-  debug=FALSE
-  imax <- .Machine$integer.max
+simPCR <- function(data, kit=NULL, method="DEFAULT", pcr.cyc=30, pcr.prob=0.8, sd.pcr.prob=0,
+                   stutter=TRUE, stutter.prob=0.002, sd.stutter.prob=0, stutter.reg=FALSE,
+                   vol.aliq=10, sd.vol.aliq=0, vol.pcr=25, sd.vol.pcr=0,
+                   debug=FALSE) {
   
-	# Debug info.
-	if(debug){
-	  print(paste("IN:", match.call()[[1]]))
-		flush.console()
-	}
 
+  # Debug info.
+  if(debug){
+    print(paste(">>>>>> IN:", match.call()[[1]]))
+    print("CALL:")
+    print(match.call())
+    print("###### PROVIDED ARGUMENTS")
+    print("STRUCTURE data:")
+    print(str(data))
+    print("HEAD data:")
+    print(head(data))
+    print("TAIL data:")
+    print(tail(data))
+    print("kit:")
+    print(kit)
+    print("pcr.prob:")
+    print(pcr.prob)
+    print("sd.pcr.prob:")
+    print(sd.pcr.prob)
+    print("stutter:")
+    print(stutter)
+    print("stutter.prob:")
+    print(stutter.prob)
+    print("sd.stutter.prob:")
+    print(sd.stutter.prob)
+    print("pcr.cyc:")
+    print(pcr.cyc)
+    print("vol.aliq:")
+    print(vol.aliq)
+    print("sd.vol.aliq:")
+    print(sd.vol.aliq)
+    print("vol.pcr:")
+    print(vol.pcr)
+    print("sd.vol.pcr:")
+    print(sd.vol.pcr)
+  }
+  
+  # CHECK PARAMETERS ##########################################################
+  
+  if(!is.data.frame(data)){
+    stop(paste("'data' must be of type data.frame."))
+  }
+  
+  if(!is.logical(debug)){
+    stop(paste("'debug' must be logical."))
+  }
+  
+  if(!is.logical(stutter)){
+    stop(paste("'stutter' must be logical."))
+  }
 
-  if(dip){
+  if(!"Marker" %in% names(data)){
+    stop(paste("'data' must have a colum 'Marker'."))
+  }
+  
+  if(!"Allele" %in% names(data)){
+    stop(paste("'data' must have a colum 'Allele'."))
+  }
+
+  if(!"Sim" %in% names(data)){
+    stop(paste("'data' must have a colum 'Sim'."))
+  }
+  
+  if(!"Volume" %in% names(data)){
+    stop(paste("'data' must have a colum 'Volume'."))
+  }
+  
+  if(!"DNA" %in% names(data)){
+    stop(paste("'data' must have a colum 'DNA'."))
+  }
+  
+  if(is.null(vol.aliq) || !is.numeric(vol.aliq) || vol.aliq < 0){
+    stop(paste("'vol.aliq' must be a positive numeric giving the ",
+               "volume aliquoted for PCR."))
+  }
+  
+  if(is.null(sd.vol.aliq) || !is.numeric(sd.vol.aliq) || sd.vol.aliq < 0){
+    stop(paste("'sd.vol.aliq' must be a positive numeric giving the standard",
+               "deviation of 'vol.aliq'."))
+  }
+
+  if(is.null(pcr.prob) || !is.numeric(pcr.prob) || pcr.prob < 0){
+    stop(paste("'pcr.prob' must be a positive numeric giving the ",
+               "PCR probability."))
+  }
+  
+  if(is.null(sd.pcr.prob) || !is.numeric(sd.pcr.prob) || sd.pcr.prob < 0){
+    stop(paste("'sd.pcr.prob' must be a positive numeric giving the standard",
+               "deviation of 'pcr.prob'."))
+  }
+
+  if(is.null(stutter.prob) || !is.numeric(stutter.prob) || stutter.prob < 0){
+    stop(paste("'stutter.prob' must be a positive numeric giving the ",
+               "stutter probability."))
+  }
+  
+  if(is.null(sd.stutter.prob) || !is.numeric(sd.stutter.prob) || sd.stutter.prob < 0){
+    stop(paste("'sd.stutter.prob' must be a positive numeric giving the standard",
+               "deviation of 'stutter.prob'."))
+  }
+  
+  # PREPARE ###################################################################
+  
+  # Get maximum number that can be represented as an integer.
+  .imax <- .Machine$integer.max
+  
+  # Get number of simulations.
+  .sim <- max(data$Sim)
+  
+  # Get number of rows per simulation.
+  .rows <- plyr::count(data$Sim)$freq
+  
+  # Get total number of observations.
+  .obs <- nrow(data)
+
+  if(debug){
+    print(paste("Max integer value:", .imax))
+    print(paste("Number of simulations:", .sim))
+    print(paste("Number of rows per simulation:", paste(unique(.rows), collapse=",")))
+  }
+  
+  if(stutter.reg){
     
-  	# CONSTANTS
-  	# - probability of one or the other allele in haploid cells (i.e. sperm cells).
-  	# pHaploid=0.5
-  
-  	# Debug info.
-  	if(debug){
-  	  print("ncells:")
-  	  print(head(ncells))
-  	  print("probEx:")
-  	  print(head(probEx))
-  	  print("probAlq:")
-  	  print(head(probAlq))
-  	  print("probPCR:")
-  	  print(head(probPCR))
-  		print(paste("cyc:", cyc))
-  		print(paste("tDetect:", tDetect))
-  		print(paste("dip:", dip))
-  		print(paste("KH:", KH))
-  		print(paste("sim:", sim))
-  		flush.console()
-  	}
-  
-  	# STANDARD VERIFICATIONS
-  	
-  	if(is.null(ncells) || !is.numeric(ncells) || ncells <0){
-  		stop("'ncells' must be a numeric giving the number of cells")
-  	}
-
-  	if(!is.numeric(cyc) || is.na(cyc) || cyc < 1){
-  	    stop("Th number of PCR cycles must at least equal 1")
-  	}
-
-  	if(!is.na(tDetect)){
-  	  if(!is.numeric(tDetect) || tDetect < 0){
-  	    stop("'tDetect' must be a positive numeric or NA")
-  	  }
-  	}
-  	if(!is.na(KH)){
-  	  if(!is.numeric(KH) || KH < 0){
-  	    stop("'KH' must be a positive numeric or NA")
-  	  }
-  	}
-  	
-    #cheking the probabilities input parameters:
-  	#probEx: extraction efficiency
-  	if(!is.numeric(probEx) || is.na(probEx) || probEx <0 || probEx >1){
-          stop("'probEx' is a probability, it must belong to [0,1]")
-    }
-  
-  	#probAlq: probability of surviving for aliquots
-  	if(!is.numeric(probAlq) || is.na(probAlq) || probAlq <0 || probAlq >1){
-          stop("'probAlq' is a probability, it must belong to [0,1]")
-    }
-  	
-  	#probPCR: PCR efficiency
-  	if(!is.numeric(probPCR) || is.na(probPCR) || probPCR <0 || probPCR >1){
-          stop("'probPCR' is a probability, it must belong to [0,1]")
-    }
-  	
-  	#cyc: PCR cycle
-  	if(!is.numeric(cyc) || is.na(cyc) || cyc <=0){
-  		stop("'cyc' is the number of PCR cycles, it must be an integer > 0")
-  	}
-  	
-  	#At this point, we have all the input parameters
-
-  	# Calculate the number of DNA molecules for the allele.
-  	ndna <- floor(ncells)
-  	
-  	
-  	##################1st EXTRACTION STEP
-  
-		# Number of alleles surviving the extraction process: nAs, are generated from a binomial distribution
-		# with parameters ndna (number of dna molecules) and Probex (extraction efficiency)
-
-  	nAs<- rbinom(n=sim,size=ndna,prob=probEx)
-
-  	# Debug info.
-  	if(debug){
-      print("ndna")
-      print(ndna)
-      print("nAs")
-  	  print(nAs)
-  	  print(class(nAs))
-  	  flush.console()
-  	}
-  	
-  	##################2nd EXTRACTION STEP: aliquots
-  
-  	# Aliquots of type A
-  	nA<-rbinom(n=sim,size=nAs,prob=probAlq)
-
-  	# Debug info.
-  	if(debug){
-  	  print("nA")  
-  	  print(nA)
-  	  print(class(nA))
-  	  flush.console()
-  	}
-  	
-  	##################PCR efficiency: 
-  
-  	# For each cycle (defind in cyc)
-  	tmpA<-as.numeric(nA)
-    
-    for(c in 1:cyc) {
-
-      # NB! To avoid NA (integer overflow) in rbinom (R >= 3.0.0):
-      # Divide in max integer and add up after rbinom.
-      iChunks <- floor(tmpA / imax)
-      rest <- tmpA - iChunks * imax 
-      # Debug info.
-#       if(debug){
-#         print("iChunks (number of imax chunks)")  
-#         print(iChunks)
-#         print("tmpA")  
-#         print(tmpA)
-#         print("rest")  
-#         print(rest)
-#         print("if(iChunks>0)")
-#         print(iChunks>0)
-#         flush.console()
-#       }
+    if(!"Size" %in% names(data)){
       
-      for(s in 1:sim){
+      kitData <- getKit(kit=kit, what="Offset")
+      
+      if(!all(is.na(kitData))){
         
-        if(iChunks[s] > 0) {
-
-          # Run rbinom for all 
-          for(b in 1:iChunks[s]){
-            tmpA[s] <- tmpA[s] + as.numeric(rbinom(n=1, size=imax, prob=probPCR))
-          }
-          # Add the rest.
-          tmpA[s] <- tmpA[s] + as.numeric(rbinom(n=1, size=rest[s], prob=probPCR))
-        } else {
-          tmpA[s] <- tmpA[s] + as.numeric(rbinom(n=1, size=rest[s], prob=probPCR))
-        }
+        data <- strvalidator::addSize(data=data, kit=kitData,
+                                      bins=FALSE, ignore.case=FALSE, debug=debug)
+        message("Added column 'Size'")
+        
+      } else {
+        
+        message("Could not calculate allele size!")
+        print(getKit())
+        stop(paste(kit, "is not a defined DNA typing kit (available kits are printed above)."))
+        
       }
       
-#       # ORIGINAL (DOES NOT WORK FOR VECTORS)
-#       if(i>0) {
-#         for(b in 1:i){
-#           tmpA <- tmpA + as.numeric(rbinom(n=sim, size=imax, prob=probPCR))
-#         }
-#       }
-#       tmpA <- tmpA + rbinom(n=sim, size=rest, prob=probPCR)
-      
-  	}
-  
-  	###################CE parameters:
-  	#TODO: aliquots of type A 1 ?L of 25 ?L / 50 ?L --> p=0,04 and p=0,02
-  	#TODO: probability fragment injected into capillary
-
-    #detection threshold T=2x10^7
-  	#converting from number of molecules to peak heights: to be improved
-  	#diploid case
-  
-  	#generating peak heights: this might be subject to change during model calibration
-  	# +tDetect to avoid 0 and negative values.
-  	
-  	# Debug info.
-  	if(debug){
-  	  print("tmpA")    
-  	  print(tmpA)    
-  	  flush.console()
-  	}
-
-    # Unessessary step...
-  	vecH1 <- tmpA
-    
-    # Apply detection threshold.
-    if(!is.na(tDetect)){
-      vecH1 <- vecH1 / tDetect
     }
-    # Apply scaling factor.
-  	if(!is.na(KH)){
-  	  vecH1 <- vecH1 * KH
-  	}
-    # Round to integers.
-  	res <- round(vecH1)
-
-    if(any(is.na(res))){
-      warning(paste("Simulation contains NA", match.call()[[1]]))
-    }
-    
-  	# Debug info.
-  	if(debug){
-  		print("res:")
-  		print(head(res))
-  		flush.console()
-  	}
-  
-  
-  	# Debug info.
-  	if(debug){
-  	  print(paste("EXIT:", match.call()[[1]]))
-  		flush.console()
-  	}
-  
-  	# Return simulated peak heights.
-  	return(res)
-  } else if (!dip){
-    
-  } else {
-    
-    stop("dip must be a logical indicating 'diploid' (TRUE) or 'haploid' (FALSE) cells!")
     
   }
-	
+    
+  # SIMULATE ##################################################################
+
+  message("SIMULATE POLYMERASE CHAIN REACTION")
+  
+  # ALIQUOT VOLUME ------------------------------------------------------------
+  
+  # Draw random aliguotes for each simulation.
+  raliq <- rnorm(n=.sim, mean=vol.aliq, sd=sd.vol.aliq)
+
+  if(debug){
+    print("PARAMETERS TO SIMULATE THE ALIQUOT VOLUME")
+    print("rnorm(n, mean, sd)")
+    print(paste("n:", .sim))
+    print(paste("mean:",vol.aliq))
+    print(paste("sd:", sd.vol.aliq))
+  }
+
+  # Aliquot volume cannot be negative.
+  # TODO: use a truncated normal distribution?
+  raliq[raliq < 0] <- 0
+
+  if(debug){
+    print("Aliquote volum after truncation of negative values:")
+    print(str(raliq))
+    print(head(raliq))
+    print(tail(raliq))
+  }
+
+  # Check if column exist.
+  if("PCR.Pip.Vol" %in% names(data)){
+    data$PCR.Pip.Vol <- NA
+    message("The 'PCR.Pip.Vol' column was overwritten!")
+  } else {
+    data$PCR.Pip.Vol <- NA
+    message("'PCR.Pip.Vol' column added")
+  }
+  
+  # Add data.
+  data$PCR.Pip.Vol <- rep(raliq, times=.rows)  # Repeat each aliquot per simulation.
+  
+  # ALIQUOT PROBABILITY -------------------------------------------------------
+  
+  # Calculate the probability of being aliquoted (probAliq).
+  rvolume <- data$Volume
+  rpip <- data$PCR.Pip.Vol
+  paliq <- rpip / rvolume
+  paliq[paliq < 0] <- 0
+  paliq[paliq > 1] <- 1
+    
+  if(debug){
+    print("Calculated probabilities of being aliquoted after truncation of values <0 and >1:")
+    print(str(paliq))
+    print(head(paliq))
+    print(tail(paliq))
+  }
+
+  # Check if column exist.
+  if("PCR.Aliq.Prob" %in% names(data)){
+    data$PCR.Aliq.Prob <- NA
+    message("The 'PCR.Aliq.Prob' column was overwritten!")
+  } else {
+    data$PCR.Aliq.Prob <- NA
+    message("'PCR.Aliq.Prob' column added")
+  }
+  
+  # Add data.
+  data$PCR.Aliq.Prob <- paliq
+  
+  # TEMPLATE MOLECULES --------------------------------------------------------
+  
+  # Number of template molecules aliquoted to PCR.
+  dnain <- data$DNA
+  probin <- data$PCR.Aliq.Prob
+  dnaout <- rbinom(n=.obs, size=dnain, prob=probin)
+  
+  if(debug){
+    print("PARAMETERS TO SIMULATE THE ALIQUOT FOR PCR")
+    print("rbinom(n, size, prob)")
+    print(paste("n:", .obs))
+    print("size:")
+    print(head(dnain))
+    print("prob:")
+    print(head(probin))
+  }
+  
+  # Check if column exist.
+  if("PCR.DNA" %in% names(data)){
+    data$PCR.DNA <- NA
+    message("The 'PCR.DNA' column was overwritten!")
+  } else {
+    data$PCR.DNA <- NA
+    message("'PCR.DNA' column added.")
+  }
+  
+  # Add data.
+  data$PCR.DNA <- dnaout
+
+  # REACTION VOLUME -----------------------------------------------------------
+  
+  # Draw random reaction volumes for each simulation.
+  rvol <- rnorm(n=.sim, mean=vol.pcr, sd=sd.vol.pcr)
+  
+  if(debug){
+    print("PARAMETERS TO SIMULATE THE REACTION VOLUME")
+    print("rnorm(n, mean, sd)")
+    print(paste("n:", .sim))
+    print(paste("mean:",vol.pcr))
+    print(paste("sd:", sd.vol.pcr))
+  }
+  
+  # Reaction volume cannot be negative.
+  # TODO: use a truncated normal distribution?
+  rvol[rvol < 0] <- 0
+  
+  if(debug){
+    print("Reaction volum after truncation of negative values:")
+    print(str(rvol))
+    print(head(rvol))
+    print(tail(rvol))
+  }
+  
+  # Check if column exist.
+  if("PCR.Vol" %in% names(data)){
+    data$PCR.Vol <- NA
+    message("The 'PCR.Vol' column was overwritten!")
+  } else {
+    data$PCR.Vol <- NA
+    message("'PCR.Vol' column added.")
+  }
+  
+  # Add data.
+  #data$PCR.Vol <- rep(rvol, each=.rows)
+  data$PCR.Vol <- rep(rvol, times=.rows)
+  
+  
+  # PCR EFFICIENCY ------------------------------------------------------------
+
+  # Get number of allele copies for each allele.
+  molecules <- as.numeric(data$PCR.DNA)
+
+  # Get kit parameters.
+  kitmarkers <- NA
+  kitprob <- NA
+  kitprobstutter <- NA
+  if(is.null(kit)){
+    # Sample specific PCR efficiency.
+    
+    message("'kit' is not provided. Using PCR probability on a per sample basis.")
+    
+    # SIMULATE PCR EFFICIENCY -------------------------------------------------
+    
+    # Draw random pcr efficiencies for each simulation.
+    rpcrprob <- rnorm(n=.sim, mean=pcr.prob, sd=sd.pcr.prob)
+    
+    if(debug){
+      print("PARAMETERS TO SIMULATE THE PCR PROBABILITY")
+      print("rnorm(n, mean, sd)")
+      print(paste("n:", .sim))
+      print(paste("mean:",paste(pcr.prob, collapse=", ")))
+      print(paste("sd:", paste(sd.pcr.prob, collapse=", ")))
+    }
+    
+    # PCR efficiency must be {0,1}.
+    # TODO: use a truncated normal distribution?
+    rpcrprob[rpcrprob < 0] <- 0
+    rpcrprob[rpcrprob > 1] <- 1
+    
+    if(debug){
+      print("PCR efficiency after truncation of values !{0,1}:")
+      print("str")
+      print(str(rpcrprob))
+      print("head")
+      print(head(rpcrprob))
+      print("tail")
+      print(tail(rpcrprob))
+    }
+    
+    # Check if column exist.
+    if("PCR.Prob" %in% names(data)){
+      data$PCR.Prob <- NA
+      message("The 'PCR.Prob' column was overwritten!")
+    } else {
+      data$PCR.Prob <- NA
+      message("'PCR.Prob' column added.")
+    }
+    
+    # Add a column indicating the PCR efficiency (same PCR prob within a sample).
+    data$PCR.Prob <- rep(rpcrprob, times=.rows)
+    
+    # SIMULATE STUTTER PROBABILITY ------------------------------------------
+    
+    if(stutter){
+
+      # Draw random stutter probabilities for each simulation.
+      rstutterprob <- rnorm(n=.sim, mean=stutter.prob, sd=sd.stutter.prob)
+      
+      if(debug){
+        print("PARAMETERS TO SIMULATE THE STUTTER PROBABILITY")
+        print("rnorm(n, mean, sd)")
+        print(paste("n:", .sim))
+        print(paste("mean:",stutter.prob))
+        print(paste("sd:", sd.stutter.prob))
+      }
+      
+      # Stutter probabilities must be {0,1}.
+      # TODO: use a truncated normal distribution?
+      rstutterprob[rstutterprob < 0] <- 0
+      rstutterprob[rstutterprob > 1] <- 1
+      
+      if(debug){
+        print("Stutter probabilities after truncation of values !{0,1}:")
+        print(str(rstutterprob))
+        print(head(rstutterprob))
+        print(tail(rstutterprob))
+      }
+      
+      if("PCR.Prob.Stutter" %in% names(data)){
+        data$PCR.Prob.Stutter <- NA
+        message("The 'PCR.Prob.Stutter' column was overwritten!")
+      } else {
+        data$PCR.Prob.Stutter <- NA
+        message("'PCR.Prob.Stutter' column added.")
+      }
+      
+      # Add a column indicating the PCR efficiency (same PCR prob within a sample).
+      data$PCR.Prob.Stutter <- rep(rstutterprob, times=.rows)
+      
+      # But not for gender markers...
+      data$PCR.Prob.Stutter[data$Allele == "X"] <- 0
+      data$PCR.Prob.Stutter[data$Allele == "Y"] <- 0
+      
+    }
+      
+  } else {
+    # Marker specific PCR efficiency from file.
+
+    message("'kit' is provided. Using PCR probability on a per locus basis.")
+    
+    if(!is.data.frame(kit)){
+
+      message("Fetch kit parameters from file.")
+      
+      # TODO: The parameter file structure and column names might change.
+      
+      # Get PCR probability 'probpcr' (locus dependent) from parameter file.
+      # Get kit parameters.
+      kitInfo <- getParameter(kit = kit, method = method)
+      
+      if(stutter.reg){
+        
+        # Get marker names and PCR efficiency values.
+        tmp <- unique(kitInfo[c("Marker", "PCR.Efficiency", "Stutter.Max.Size",
+                                "Stutter.Type.Repeat", "Stutter.Type.Bp",
+                                "Stutter.Intercept", "Stutter.Slope")])
+        # TODO: Handle more than just -1 repeats.
+        # TODO: Handle more than just one regression per marker.
+        # NB! Can only handle -1 repeats and one regression per marker.
+        # Filter other information.
+        tmp <- tmp[tmp$Stutter.Type.Repeat==-1, ]
+        tmp <- tmp[tmp$Stutter.Max.Size=="Inf", ]
+        
+        # Change name on column.
+        names(tmp) <- gsub("PCR.Efficiency", "PCR.Prob", names(tmp))
+        
+        # Save in variable.
+        kitparam <- tmp
+        
+      } else {
+        
+        # Get marker names and PCR efficiency values.
+        tmp <- unique(kitInfo[c("Marker", "PCR.Efficiency")])
+        kitmarkers <- tmp$Marker
+        kitprob <- tmp$PCR.Efficiency
+        # Get marker names and stutter probability values.
+        tmp <- unique(kitInfo[c("Marker", "Stutter.Probability")])
+        kitprobstutter <- tmp$Stutter.Probability      
+        
+        # Create kit parameter data frame.
+        kitparam <- data.frame(Marker=kitmarkers, PCR.Prob=kitprob,
+                               PCR.Prob.Stutter=kitprobstutter,
+                               stringsAsFactors=FALSE)  
+        
+      }
+      
+    } else {
+      
+      message("Kit parameters provided.")
+      kitparam <- kit
+      
+    }
+    
+    if(debug){
+      print("Kit parameters:")
+      print(kitparam)
+    }
+
+    # Check if column exist.
+    if("PCR.Prob" %in% names(data)){
+      data$PCR.Prob <- NA
+      message("The 'PCR.Prob' column was overwritten!")
+    } else {
+      data$PCR.Prob <- NA
+      message("'PCR.Prob' column added.")
+    }
+    
+    # Get unique markers in dataset.
+    datamarkers <- unique(as.character(data$Marker))
+    
+    # Add PCR probabilities for each marker.
+    for(m in seq(along=datamarkers)){
+      
+      data$PCR.Prob[data$Marker==datamarkers[m]] <- 
+        unique(kitparam$PCR.Prob[kitparam$Marker==datamarkers[m]])
+      
+    }
+      
+    if(stutter){
+      
+      if("PCR.Prob.Stutter" %in% names(data)){
+        data$PCR.Prob.Stutter <- NA
+        message("The 'PCR.Prob.Stutter' column was overwritten!")
+      } else {
+        data$PCR.Prob.Stutter <- NA
+        message("'PCR.Prob.Stutter' column added.")
+      }
+      
+      if(stutter.reg){
+        message("Use regression to calculate stutter probability.")
+        
+        for(m in seq(along=datamarkers)){
+          
+          # TODO: Handle more than just -1 repeats.
+          # TODO: Handle more than just one regression per marker.
+          
+          # Get parameters.
+          slope <- kitparam$Stutter.Slope[kitparam$Marker==datamarkers[m]]
+          intercept <- kitparam$Stutter.Intercept[kitparam$Marker==datamarkers[m]]
+          selection <- data$Marker==datamarkers[m]
+          
+          # Calculate and add stutter probability.
+          data$PCR.Prob.Stutter[selection] <- data$Size[selection] * slope + intercept
+          
+        }
+        
+      } else {
+        message("Use fixed values for stutter probability.")
+        
+        # Add PCR probability for stutter formation for each marker.
+        for(m in seq(along=datamarkers)){
+          
+          data$PCR.Prob.Stutter[data$Marker==datamarkers[m]] <- 
+            unique(kitparam$PCR.Prob.Stutter[kitparam$Marker==datamarkers[m]])
+          
+        }
+      
+      }
+      
+    }
+    
+  }
+  
+  # PCR -----------------------------------------------------------------------
+
+  # Get pcr probabilities.
+  probpcr <- data$PCR.Prob
+
+  # Get pcr probabilities.
+  probstutter <- data$PCR.Prob.Stutter
+  if(is.null(probstutter)){
+    probstutter <- rep(0, length(probpcr))
+  }
+
+  # PCR is simulated using multinomial.
+
+  if(stutter){
+  
+    # If sum > 1, normalise to sum to 1.
+    normsum <- probpcr + probstutter
+    normflag <- normsum > 1
+    if(any(normflag)){
+      message("Sum probabilities >1, normalising probabilities.")
+      # Normalise probabilities.
+      probpcr[normflag] <- probpcr[normflag] / normsum[normflag]
+      probstutter[normflag] <- probstutter[normflag] / normsum[normflag]
+      # Update probabilities.
+      data$PCR.Prob <- probpcr
+      data$PCR.Prob.Stutter <- probstutter
+      message("'PCR.Prob' column updated!")
+      message("'PCR.Prob.Stutter' column updated!")
+    } else {
+      message("Sum probabilities check passed (<=1).")
+    }
+    
+    # Initiate vectors.
+    backstutters <- rep(0, length(.obs))
+    backstutters2 <- rep(0, length(.obs))
+    
+  }
+
+  # Check for any stutter probability > 0.
+  anystutter <- any(probstutter > 0)
+
+  # Calculate probability of no amplification. Replace any negative numbers with 0.
+  probno <- 1-probpcr-probstutter
+  probno[probno < 0] <- 0
+  
+  # Create probability matrix: no amp|normal amp|with stutter.
+  probpcrmatrix <- matrix(c(probno, probpcr, probstutter), byrow=FALSE, ncol=3)
+  
+  # Round probability matrix to avoid numerical representation errors.
+  probpcrmatrix <- round(probpcrmatrix, 6)
+
+  if(debug){
+    print("Probability matrix:")
+    print(head(probpcrmatrix))
+    print("probpcr")
+    print(head(probpcr))
+    print("probstutter")
+    print(head(probstutter))
+    print("anystutter")
+    print(anystutter)
+  }
+  
+
+  # Repeat for each PCR cycle.
+  for(c in 1:pcr.cyc) { # Begin PCR loop.
+    
+    if(debug){
+      print(paste("PCR cycle:", c))
+    }
+    
+    # Simulate PCR for allelic fragments.
+    newres <- rmultinomxl(n=.obs, size=molecules, prob=probpcrmatrix, debug=FALSE)
+    
+    # Number of molecules with normal amplification is in column 2.
+    newmol <- as.numeric(newres[,2])
+    molecules <- molecules + newmol
+    
+    if(stutter & anystutter){
+      # TODO: Enable an arbitrary number of stutters (with different probability).
+
+      # Number of molecules with stutter formation is in column 3.
+      newstutter <- as.numeric(newres[,3])
+      backstutters <- backstutters + newstutter
+      
+      # Simulate PCR for stutter fragments.
+      newres <- rmultinomxl(n=.obs, size=backstutters, prob=probpcrmatrix, debug=FALSE)
+      
+      # Number of molecules with normal amplification is in column 2.
+      newstutter <- as.numeric(newres[,2])
+      backstutters <- backstutters + newstutter
+      
+      # Number of molecules with stutter formation is in column 3.
+      newstutter2 <- as.numeric(newres[,3])
+      backstutters2 <- backstutters2 + newstutter2
+      
+    }
+    
+  } # End PCR loop.
+  
+  if(debug){
+    print("PARAMETERS TO SIMULATE THE PCR")
+    print("rmultinomial(n, size, prob{no, amp, stutter})")
+    print(paste("n:", .obs))
+    print("size: number of molecules in cycle c")
+    print(paste("prob{amp}:", paste(unique(probpcrmatrix[,2]), collapse=", ")))
+    print(paste("prob{stutter}:", paste(unique(probpcrmatrix[,3]), collapse=", ")))
+    
+  }
+  
+  if("PCR.Amplicon" %in% names(data)){
+    message("The 'PCR.Amplicon' column was overwritten!")
+    data$PCR.Amplicon <- NA
+  } else {
+    message("'PCR.Amplicon' column added.")
+    data$PCR.Amplicon <- NA
+  }
+  
+  # Add a column indicating the number of molecules.
+  data$PCR.Amplicon <- molecules
+
+  if(stutter){
+
+    if("PCR.Stutter.1" %in% names(data)){
+      data$PCR.Stutter.1 <- NA
+      message("The 'PCR.Stutter.1' column was overwritten!")
+    } else {
+      data$PCR.Stutter.1 <- NA
+      message("'PCR.Stutter.1' column added.")
+    }
+    
+    # Add a column indicating the number of stutter molecules.
+    data$PCR.Stutter.1 <- backstutters
+    
+    if("PCR.Stutter.2" %in% names(data)){
+      data$PCR.Stutter.2 <- NA
+      message("The 'PCR.Stutter.2' column was overwritten!")
+    } else {
+      data$PCR.Stutter.2 <- NA
+      message("'PCR.Stutter.2' column added.")
+    }
+    
+    # Add a column indicating the number of stutter molecules.
+    data$PCR.Stutter.2 <- backstutters2
+    
+  }
+    
+  
+  # Update DNA column ---------------------------------------------------------
+  
+  if("DNA" %in% names(data)){
+    data$DNA <- NULL # Remove first so that the column always appear to the right.
+    data$DNA <- NA
+    message("'DNA' column updated!")
+  } else {
+    data$DNA <- NA
+    message("'DNA' column added.")
+  }
+
+  # Add number of cells/molecules to data.
+  data$DNA <- molecules
+  
+  
+  # RETURN ####################################################################
+  
+  # Debug info.
+  if(debug){
+    print("RETURN")
+    print("STRUCTURE:")
+    print(str(data))
+    print("HEAD:")
+    print(head(data))
+    print("TAIL:")
+    print(tail(data))
+    print(paste("<<<<<< EXIT:", match.call()[[1]]))
+  }
+  
+  # Return result. 
+  return(data)
+  
 }

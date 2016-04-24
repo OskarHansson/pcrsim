@@ -1,7 +1,7 @@
-Version 0.2.0
+Version 1.0.0
 ------------------------------------------------------------------------------
 
-* Updated for compatibility with strvalidator version 1.0.0
+* New structure with separate functions to simulate each step in the process.
 
 Version 0.1.1
 ------------------------------------------------------------------------------

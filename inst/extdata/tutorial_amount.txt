@@ -1,0 +1,9 @@
+Sample.Name	Amount
+Dil1	4
+Dil2	2
+Dil3	1
+Dil4	0.5
+Dil5	0.25
+Dil6	0.125
+Dil7	0.0625
+Dil8	0.0313
