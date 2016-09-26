@@ -1,0 +1,4 @@
+# pcrsim
+An R package for simulation of the forensic DNA process
+
+The package was developed based on the simulation functions in forensim, which is an implementation of A graphical simulation model of the entire DNA process, but expanded to include simulation of entire profiles and mixtures. In addition pcrsim is able to simulate inter-locus balance, stutters, and degradation. The graphical user interface give access to function parameters organised into tabs for the respective subprocess. Simulation is performed and the result for each step can be viewed as a table within the GUI or plotted as an electropherogram (EPG). Effort has been made to mimic each step of the real process as closely as possible - consequently, due to performance, it is not well suited for very large simulations. For realistic simulations pcrsim must be calibrated to the quantification method used and for each capillary electrophoresis instrument.
