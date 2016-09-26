@@ -1,9 +1,10 @@
 ################################################################################
 # TODO LIST
-# TODO: ...
+# TODO: This function is in need of simplification.
 
 ################################################################################
 # CHANGE LOG (10 last changes)
+# 26.04.2016: res initalised to NA to take care of unhandled combinations.
 # 14.04.2016: Version 1.0.0 released.
 # 03.12.2015: getParameter(what="Method") now returns all methods for all kits.
 # 10.11.2015: Return only correct 'method' if what=NA.
@@ -71,6 +72,9 @@ getParameter<-function(kit=NULL, what=NA, method=NA, show.messages=FALSE,
     print(".kit.param:")
     print(head(.kit.param))
   }
+  
+  # Initialise to NA to take care of unhandled combinations:
+  res = NA
 
   # CHECK PARAMETERS  #########################################################
   

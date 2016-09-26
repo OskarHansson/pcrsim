@@ -1,3 +1,11 @@
+Version 1.0.1
+------------------------------------------------------------------------------
+* Updated calibratePCRsim, calibrateScaling for compatibility with strvalidator 1.8.
+* getParameter: res initalised to NA to take care of unhandled combinations.
+  "Error in str(res) : object 'res' not found"
+* pcrsim: Fixed error when loaded method is not parameters.txt:
+  "Error in if (val_method %in% profile_method_drp[]) { : argument is of length zero"
+
 Version 1.0.0
 ------------------------------------------------------------------------------
 

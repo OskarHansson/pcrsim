@@ -23,6 +23,9 @@
 
 ################################################################################
 # CHANGE LOG (10 last changes)
+# 26.04.2016: Handles NA as response from getParameter for threshold and scaling.
+# 26.04.2016: Fixed bug:
+# Error in if (val_method %in% profile_method_drp[]) { : argument is of length zero
 # 14.04.2016: Version 1.0.0 released.
 
 #' @title GUI for PCRsim
@@ -3421,12 +3424,13 @@ pcrsim <- function(debug=FALSE){
     val_method <- svalue(profile_method_drp)
 
     # Update method dropdown.
-    profile_method_drp[,] <- getParameter(kit=svalue(profile_kit_drp), what="method")
+    profile_method_drp[,] <- getParameter(kit=val_kit, what="method")
     
     # Restore selection.
-    if(val_method %in% profile_method_drp[]){
+    if(length(val_method) > 0 && val_method %in% profile_method_drp[]){
       svalue(profile_method_drp) <- val_method
     } else {
+      message("Method ", val_method, " not available for kit ", val_kit)
       svalue(profile_method_drp, index=TRUE) <- 1
     }
 
@@ -3719,12 +3723,26 @@ pcrsim <- function(debug=FALSE){
       }
       
       # Update gui.
-      svalue(ce_t_intercept_edt) <- val_threshold$Intercept
-      svalue(ce_t_slope_edt) <- val_threshold$Slope
-      svalue(ce_t_residual_edt) <- val_threshold$Sigma
-      svalue(ce_intercept_edt) <- val_scaling$Intercept
-      svalue(ce_slope_edt) <- val_scaling$Slope
-      svalue(ce_residual_edt) <- val_scaling$Sigma
+      if(!is.na(val_threshold)){
+        svalue(ce_t_intercept_edt) <- val_threshold$Intercept
+        svalue(ce_t_slope_edt) <- val_threshold$Slope
+        svalue(ce_t_residual_edt) <- val_threshold$Sigma
+      } else {
+        message("Failed to load threshold values for kit ", val_kit, ", method ", val_method)
+        svalue(ce_t_intercept_edt) <- ""
+        svalue(ce_t_slope_edt) <- ""
+        svalue(ce_t_residual_edt) <- ""
+      }
+      if(!is.na(val_scaling)){
+        svalue(ce_intercept_edt) <- val_scaling$Intercept
+        svalue(ce_slope_edt) <- val_scaling$Slope
+        svalue(ce_residual_edt) <- val_scaling$Sigma
+      } else {
+        message("Failed to load scaling values for kit ", val_kit, ", method ", val_method)
+        svalue(ce_intercept_edt) <- ""
+        svalue(ce_slope_edt) <- ""
+        svalue(ce_residual_edt) <- ""
+      }
 
     } else if(val_settings == 2) {
       # Custom settings.

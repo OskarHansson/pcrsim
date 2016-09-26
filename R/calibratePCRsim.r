@@ -13,6 +13,7 @@
 
 ################################################################################
 # CHANGE LOG (10 last changes)
+# 25.09.2016: Updated for strvalidator 1.8.0.
 # 14.04.2016: Version 1.0.0 released.
 # 14.04.2016: Added detection threshold range.
 # 09.09.2014: First version.
@@ -108,49 +109,26 @@ calibratePCRsim <- function(data, target=NULL, ref=NULL, quant=NULL, ignore.case
         data <- strvalidator::filterProfile(data=data, ref=ref,
                                             add.missing.loci=TRUE,
                                             keep.na=TRUE,
+                                            kit=kit,
                                             ignore.case=ignore.case,
                                             invert=FALSE, debug=ext.debug)
         
       }
       
-      # Check if data has zygosity indicator.
-      if(!'Heterozygous' %in% names(data)){
-
-        message(paste("Adding Heterozygous indicator."))
-        
-        if(!'Heterozygous' %in% names(ref)){
-          
-          # Add indicator to reference dataset.
-          ref <- strvalidator::calculateHeterozygous(data=ref, debug=debug)
-          
-          # Add indicator to dataset.
-          data <- strvalidator::addData(data=data, new.data=ref, by.col="Sample.Name",
-                                        then.by.col="Marker", exact=FALSE,
-                                        ignore.case=ignore.case, debug=ext.debug)
-          
-        } else {
-          
-          # Add indicator to dataset.
-          data <- strvalidator::addData(data=data, new.data=ref, by.col="Sample.Name",
-                                        then.by.col="Marker", exact=FALSE,
-                                        ignore.case=ignore.case, debug=ext.debug)
-          
-        }
-        
-      }
-
       message(paste("Calculating metric ", metric, ".", sep=""))
       
       # Calculate average peak height.
-      data <- strvalidator::calculateHeight(data=data, na=0, add=FALSE, exclude=NULL,
+      data <- strvalidator::calculateHeight(data=data, ref=ref,
+                                            na.replace=0, add=FALSE,
+                                            exclude=NULL, kit=kit,
                                             debug=ext.debug)
       
       # Add amount to dataset.
-      data <- strvalidator::addData(data=data, new.data=quant, by.col="Sample.Name",
-                                    then.by.col=NULL, exact=FALSE,
-                                    ignore.case=ignore.case, debug=ext.debug)
-      
-      
+      data <- strvalidator::addData(data=data, new.data=quant,
+                                    by.col="Sample.Name", then.by.col=NULL,
+                                    exact=FALSE, ignore.case=ignore.case,
+                                    debug=ext.debug)
+
     } else {
       
       stop("'ref' is required to calculate peak height metrics.")
@@ -350,7 +328,8 @@ calibratePCRsim <- function(data, target=NULL, ref=NULL, quant=NULL, ignore.case
     # Simulate ----------------------------------------------------------------
     
     # Simulate profiles.
-    dfsim <- suppressMessages(simProfile(data=fixed.profile, kit=kit, sim=sim, db=db))
+    dfsim <- suppressMessages(simProfile(data=fixed.profile, kit=kit, sim=sim,
+                                         name="Dil", db=db))
     
     if(debug){
       print("Simulated profiles")
@@ -402,17 +381,17 @@ calibratePCRsim <- function(data, target=NULL, ref=NULL, quant=NULL, ignore.case
     
     # Analyse -----------------------------------------------------------------
     
-    # Add heterozygote flags.
-    dfsimph <- strvalidator::calculateHeterozygous(data=dfsimph, debug=ext.debug)
-
-    if(debug){
-      print("Simulated data after adding heterozygous indicator:")
-      print(head(dfsimph))
-      print(tail(dfsimph))
-    }
-    
     # Calculate peak height metrics.
-    dfsimH <- strvalidator::calculateHeight(data=dfsimph, na=NULL, add=FALSE, debug=ext.debug)
+    dfsimH <- suppressMessages(strvalidator::calculateHeight(data=dfsimph,
+                                                             ref=fixed.profile,
+                                                             na=NULL,
+                                                             add=FALSE,
+                                                             word=TRUE,
+                                                             debug=ext.debug))
+    
+    if(nrow(dfsimH) == 0){
+      dfsimH <- data.frame(H=0)
+    }
 
     # Calculate total mean.
     dfSimMean <- mean(dfsimH[ , metric], na.rm=TRUE)

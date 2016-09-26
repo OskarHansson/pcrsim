@@ -1,8 +1,8 @@
 Package: pcrsim
 Type: Package
 Title: Simulation of the Forensic DNA Process
-Version: 1.0.0
-Date: 2016-04-20
+Version: 1.0.1
+Date: 2016-09-26
 Author: Oskar Hansson
 Maintainer: Oskar Hansson <oskar.hansson@fhi.no>
 URL: https://github.com/OskarHansson/pcrsim

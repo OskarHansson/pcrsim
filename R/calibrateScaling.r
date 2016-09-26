@@ -8,6 +8,7 @@
 
 ################################################################################
 # CHANGE LOG (10 last changes)
+# 25.09.2016: Updated for strvalidator 1.8.0.
 # 14.04.2016: Version 1.0.0 released.
 # 30.10.2015: First version.
 
@@ -40,7 +41,7 @@
 #' 
 
 calibrateScaling <- function(data, ref=NULL, target, c.min=0, c.max=10000,
-                             min.step.size=0.0001, exact.matching = FALSE,
+                             min.step.size=0.0001, exact.matching=FALSE,
                              progress=FALSE, .i=1) {
   
   # CHECK PARAMETERS ##########################################################
@@ -103,8 +104,11 @@ calibrateScaling <- function(data, ref=NULL, target, c.min=0, c.max=10000,
     if(is.null(ref)){
       
       # Guess the correct profile.
-      ref <- strvalidator::guessProfile(data = data, height = 50, ratio = 0.5,
-                                        na.rm = TRUE, ol.rm = TRUE)
+      ref <- suppressMessages(strvalidator::guessProfile(data = data,
+                                                         height = 50,
+                                                         ratio = 0.5,
+                                                         na.rm = TRUE,
+                                                         ol.rm = TRUE))
       
       # Use exact matching when adding information.
       exact.matching <- TRUE
@@ -113,17 +117,23 @@ calibrateScaling <- function(data, ref=NULL, target, c.min=0, c.max=10000,
     }
 
     # Filter data.
-    data <- strvalidator::filterProfile(data=data, ref=ref, exact=exact.matching)
+    data <- suppressMessages(strvalidator::filterProfile(data=data,
+                                                         ref=ref,
+                                                         exact=exact.matching,
+                                                         word=TRUE))
     
     # Add heterozygous indicator.
-    ref <- strvalidator::calculateHeterozygous(ref)
-    data <- strvalidator::addData(data=data, new.data = ref,
-                                  by.col = "Sample.Name", then.by.col = "Marker",
-                                  exact = exact.matching)
+    ref <- suppressMessages(strvalidator::calculateCopies(data = ref,
+                                                          heterozygous = TRUE))
+    data <- suppressMessages(strvalidator::addData(data = data,
+                                                   new.data = ref,
+                                                   by.col = "Sample.Name",
+                                                   then.by.col = "Marker",
+                                                   exact = exact.matching))
 
     if(progress){
       print("Please review the data to make sure all profiles have been correctly filtered:")  
-      print(strvalidator::calculateHeight(data = data, add = FALSE))
+      print(strvalidator::calculateHeight(data = data, ref = ref, add = FALSE, word = TRUE))
     }
     
   }
@@ -150,11 +160,14 @@ calibrateScaling <- function(data, ref=NULL, target, c.min=0, c.max=10000,
     data$Height <- data$CE.RFU * cVector[d]
 
     # Calculate average peak height.
-    dataH <- strvalidator::calculateHeight(data = data, add = FALSE)
+    dataH <- suppressMessages(strvalidator::calculateHeight(data = data,
+                                                            ref = ref,
+                                                            add = FALSE,
+                                                            word = TRUE))
     
     # Calculate the residual sum of squares.
     rss <- sum((dataH$H - target)^2)
-    
+
     # Check fit.
     if(!is.na(rss) & !is.na(lastrss)){
       
@@ -165,7 +178,7 @@ calibrateScaling <- function(data, ref=NULL, target, c.min=0, c.max=10000,
         rssfit <- rss
         
         # Calculate overall corrected mean average peak height.
-        meanH <- mean(dataH$H)
+        meanH <- mean(dataH$H, na.rm = TRUE)
         
         # Print progress.
         if(progress){
@@ -201,7 +214,7 @@ calibrateScaling <- function(data, ref=NULL, target, c.min=0, c.max=10000,
     }
 
     # Optimise further.
-    cFit <- calibrateScaling(data=data, ref=NULL, target=target,
+    cFit <- calibrateScaling(data=data, ref=ref, target=target,
                              c.min=cNewMin, c.max=cNewMax,
                              min.step.size=min.step.size, progress=progress,
                              .i=.i+1)
