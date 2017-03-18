@@ -84,4 +84,3 @@ requires the average peak height ('H').
 NB! Samples with either zero average peak height or zero number of molecules is removed automatically.
 In addition, if replicate quants, samples where one replicate was negative can be removed manually.
 }
-

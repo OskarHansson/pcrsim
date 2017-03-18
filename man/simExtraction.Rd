@@ -57,4 +57,3 @@ res <- simExtraction(data=res, vol.ex=200, sd.vol=10, prob.ex=0.3, sd.prob=0.1)
 \seealso{
 \code{\link{simSample}}
 }
-

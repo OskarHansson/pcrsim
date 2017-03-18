@@ -74,4 +74,3 @@ res <- simExtraction(data=res, vol.ex=200, sd.vol=10, prob.ex=0.3, sd.prob=0.1)
 # Simulate dilution.
 res <- simDilution(data=res, amount=1, dilution.factor=0.5)
 }
-

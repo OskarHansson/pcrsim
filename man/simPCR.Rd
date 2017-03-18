@@ -89,4 +89,3 @@ res <- simPCR(data=smpl, kit="ESX17", pcr.cyc=30, vol.aliq=10,
 \seealso{
 \code{\link{simExtraction}}
 }
-

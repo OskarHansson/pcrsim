@@ -28,4 +28,3 @@ Add Identical Peaks.
 \details{
 Add peak heights of identical allele designations together.
 }
-

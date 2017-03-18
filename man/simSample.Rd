@@ -97,4 +97,3 @@ print(res)
 \seealso{
 \code{\link{simProfile}}
 }
-

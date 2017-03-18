@@ -32,4 +32,3 @@ corresponding target size first in the size vector.
 calculateDegradation(conc=c(85,0.5), size=c(70,220))
 
 }
-

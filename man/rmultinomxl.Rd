@@ -27,4 +27,3 @@ Simulates one cycle of the PCR process.
 Generate multinomially distributed random number vectors using \code{rmultinomial}.
 Handles integer overflow by splitting numbers in chunks and call \code{rmultinomial} repeatedly.
 }
-

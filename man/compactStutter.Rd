@@ -26,4 +26,3 @@ Add peak heights of stutters to the peak heights of alleles.
 \details{
 Merge stutter values to alleles in a simulated dataset.
 }
-

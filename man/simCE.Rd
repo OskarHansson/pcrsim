@@ -65,4 +65,3 @@ print(res)
 \seealso{
 \code{\link{simPCR}}
 }
-

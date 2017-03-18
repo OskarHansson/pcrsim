@@ -52,4 +52,3 @@ getParameter(kit="SGMPlus", what="Marker")
 # Returns data frame of all information for specified kit and method.
 getParameter(kit="SGMPlus", method = "Default")
 }
-

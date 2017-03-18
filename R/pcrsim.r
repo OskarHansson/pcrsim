@@ -8,7 +8,7 @@
 # (GTK+ must be installed by clicking 'OK' on the message box).
 
 # See http://r-pkgs.had.co.nz/release.html for advice on release.
-# IMPORTANT: Use build_win() to test on current R and R-dev 'library(devtools)'.
+# IMPORTANT: Use devtools::build_win() to test on current R and R-dev.
 # IMPORTANT: Use devtools::release() to submitt to CRAN.
 
 # Versioning convention (x.yy.z[.9###]):
@@ -23,6 +23,8 @@
 
 ################################################################################
 # CHANGE LOG (10 last changes)
+# 05.10.2016: Fixed bug when not all tabs are visited prior to simulation by
+#             updating all values in GUI before simulation.
 # 26.04.2016: Handles NA as response from getParameter for threshold and scaling.
 # 26.04.2016: Fixed bug:
 # Error in if (val_method %in% profile_method_drp[]) { : argument is of length zero
@@ -2290,6 +2292,15 @@ pcrsim <- function(debug=FALSE){
   
   addHandlerChanged(sim_sim_btn, handler = function(h, ...) {
     
+    message("****** UPDATING PARAMETERS IN GUI")
+    .refreshProfileTab()
+    .refreshSampleTab()
+    .refreshDegradationTab()
+    .refreshDilutionTab()
+    .refreshAmplificationTab()
+    .refreshCETab()
+    .refreshSimulationTab()
+
     val_ok <- TRUE
     
     # Disable button until simulation is finished.

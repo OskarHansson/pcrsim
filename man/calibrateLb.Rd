@@ -57,4 +57,3 @@ calibrateLb(sim=10, target=target, amount=0.5, seed=0.85, progress=FALSE)
 # Locus specific PCR efficency parameters can now be used as parameters.
 # [1] 0.858 0.816 0.841 0.871 0.883 
 }
-

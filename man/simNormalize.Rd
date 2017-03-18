@@ -65,4 +65,3 @@ res <- simNormalize(data=res, volume=100)
 \seealso{
 \code{\link{simExtraction}}
 }
-

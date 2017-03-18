@@ -8,6 +8,7 @@
 
 ################################################################################
 # CHANGE LOG (10 last changes)
+# 05.10.2016: Added some debug prints. 
 # 14.04.2016: Version 1.0.0 released.
 # 26.08.2014: More robust definition of .rows (can be different per sample).
 # 05.03.2014: First version.
@@ -81,6 +82,16 @@ simNormalize <- function(data=NULL, volume=NULL, accuracy=1, target=0.5/17.5,
     print(head(data))
     print("TAIL data:")
     print(tail(data))
+    print("volume:")
+    print(volume)
+    print("accuracy:")
+    print(accuracy)
+    print("target:")
+    print(target)
+    print("tolerance:")
+    print(tolerance)
+    print("multiple:")
+    print(multiple)
   }
   
   # CHECK PARAMETERS ##########################################################

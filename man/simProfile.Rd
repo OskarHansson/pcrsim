@@ -50,4 +50,3 @@ print(res)
 \seealso{
 \code{\link{simSample}}
 }
-

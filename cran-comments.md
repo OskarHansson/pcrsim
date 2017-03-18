@@ -1,38 +1,25 @@
 ## Test environments
-* local Windows 7 (64-bit) install, R 3.2.4, RStudio 0.99.893
-* win-builder: R version 3.3.0 beta (2016-04-14 r70486) and R version 3.2.5 (2016-04-14)
-
+* local Windows 7 (64-bit) install, R 3.3.3, RStudio 1.0.136
+* win-builder: R Under development (unstable) (2017-03-15 r72357)
 
 ## R CMD check results
 There were no ERRORs or WARNINGs. 
 
-There was 2 NOTES in the local test environment:
+There is a remark about new and old maintainer:
+The maintainer is still the same, but the e-mail address has changed due
+to re-organisations of the work place. I am unable to access the old address.
+These two links confirm the transfer:
+https://www.fhi.no/nyheter/2016/virksomhetsoverdragelse-av-rettsmedisinske-fag-til-oslo-universitetssykehus/
+https://oslo-universitetssykehus.no/avdelinger/klinikk-for-laboratoriemedisin/avdeling-for-rettsmedisinske-fag/seksjon-for-rettsgenetikk-i-straffesaker
 
-* checking CRAN incoming feasibility ... NOTE
-  Maintainer: 'Oskar Hansson <oskar.hansson@fhi.no>'
-  New submission
-  
-  Package was archived on CRAN
-  
-  CRAN repository db overrides:
-    X-CRAN-Comment: Archived on 2014-02-07: the maintainer did not wish
-      to fix its check failure.
-    
-  OSKAR: The simulation framework has now been completely re-structured.
-
-* checking package dependencies ... NOTE
-  No repository set, so cyclic dependency check skipped
-  
-  OSKAR: I think this is harmless.
-
-There was 1 NOTE in the win-builder environment:
+There was 1 NOTE:
 
 * Possibly mis-spelled words in DESCRIPTION:
   electropherograms (16:36)
   electrophoresis (15:63)
 
   OSKAR: Above words are correct.
-  
+
 
 ## Downstream dependencies
 There are currently no downstream dependencies for this package.

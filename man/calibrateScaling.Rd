@@ -39,4 +39,3 @@ Finds the scaling factor correction that gives the best fit between the
 simulated peak heights and the target average peak height.
 This is the final step in calibrating pcrsim for a specific kit and method.
 }
-

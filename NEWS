@@ -1,3 +1,10 @@
+Version 1.0.2
+------------------------------------------------------------------------------
+* New maintainer address.
+* Added new method to parameters.txt (used in the paper "Characterization of degradation and heterozygote balance by simulation of the forensic DNA analysis process"")
+* Fixed bug when not all tabs are visited prior to simulation.
+
+
 Version 1.0.1
 ------------------------------------------------------------------------------
 * Updated calibratePCRsim, calibrateScaling for compatibility with strvalidator 1.8.

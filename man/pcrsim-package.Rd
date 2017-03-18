@@ -23,14 +23,13 @@ implementation is built to mimic the biological processes as closely as
 possible and are not suitable for simulation of large number of samples
 due to performance.
 }
-\author{
-Oskar Hansson \email{oskar.hansson@fhi.no}
-}
 \references{
 Gill, Peter, James Curran, and Keith Elliot.
 \\u0022 A Graphical Simulation Model of the Entire DNA Process Associated with
  the Analysis of Short Tandem Repeat Loci\\u0022
  Nucleic Acids Research 33, no. 2 (2005): 632-643. doi:10.1093/nar/gki205.
 }
+\author{
+Oskar Hansson \email{oskar.hansson@fhi.no}
+}
 \keyword{package}
-
