@@ -4,8 +4,14 @@
 \alias{simProfile}
 \title{DNA Profile Simulator}
 \usage{
-simProfile(data = NULL, kit = NULL, sim = 1, name = NULL, db = NULL,
-  debug = FALSE)
+simProfile(
+  data = NULL,
+  kit = NULL,
+  sim = 1,
+  name = NULL,
+  db = NULL,
+  debug = FALSE
+)
 }
 \arguments{
 \item{data}{data.frame with columns 'Marker' and 'Allele' (creates fixed profiles).}

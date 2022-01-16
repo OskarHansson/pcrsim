@@ -4,8 +4,14 @@
 \alias{getParameter}
 \title{Get Kit Parameters}
 \usage{
-getParameter(kit = NULL, what = NA, method = NA, show.messages = FALSE,
-  .kit.param = NULL, debug = FALSE)
+getParameter(
+  kit = NULL,
+  what = NA,
+  method = NA,
+  show.messages = FALSE,
+  .kit.param = NULL,
+  debug = FALSE
+)
 }
 \arguments{
 \item{kit}{string or integer specifying the kit.}

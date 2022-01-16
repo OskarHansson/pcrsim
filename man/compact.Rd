@@ -4,8 +4,7 @@
 \alias{compact}
 \title{Compact}
 \usage{
-compact(data, per.sample = TRUE, col = "Height", sim = FALSE,
-  debug = FALSE)
+compact(data, per.sample = TRUE, col = "Height", sim = FALSE, debug = FALSE)
 }
 \arguments{
 \item{data}{data frame with at least 'Sample.Name', 'Marker', 'Allele', and 'Height' columns.}

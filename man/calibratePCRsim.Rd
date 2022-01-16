@@ -4,12 +4,30 @@
 \alias{calibratePCRsim}
 \title{Calibrate PCRsim}
 \usage{
-calibratePCRsim(data, target = NULL, ref = NULL, quant = NULL,
-  ignore.case = TRUE, kit = NULL, db = NULL, fixed.profile = NULL,
-  sim = 1, pcr.cyc, ce.aliq = 1, pcr.aliq = 17.5, pcr.vol = 25,
-  minimize = TRUE, step.size = 0.001, cell.dna = 0.006,
-  dna.amount = 0.5, filter = TRUE, plot.data = TRUE, decimals = 4,
-  debug = FALSE, ext.debug = FALSE)
+calibratePCRsim(
+  data,
+  target = NULL,
+  ref = NULL,
+  quant = NULL,
+  ignore.case = TRUE,
+  kit = NULL,
+  db = NULL,
+  fixed.profile = NULL,
+  sim = 1,
+  pcr.cyc,
+  ce.aliq = 1,
+  pcr.aliq = 17.5,
+  pcr.vol = 25,
+  minimize = TRUE,
+  step.size = 0.001,
+  cell.dna = 0.006,
+  dna.amount = 0.5,
+  filter = TRUE,
+  plot.data = TRUE,
+  decimals = 4,
+  debug = FALSE,
+  ext.debug = FALSE
+)
 }
 \arguments{
 \item{data}{data.frame with observed DNA result. Required columns are sample names ('Sample.Name'),

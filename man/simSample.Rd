@@ -4,9 +4,21 @@
 \alias{simSample}
 \title{Forensic Sample Simulator}
 \usage{
-simSample(data, cells = NULL, sd.cells = 0, conc = NULL, sd.conc = 0,
-  vol = NULL, sd.vol = 0, cell.dna = 0.006, haploid = FALSE,
-  kit = NULL, slope = NULL, intercept = NULL, debug = FALSE)
+simSample(
+  data,
+  cells = NULL,
+  sd.cells = 0,
+  conc = NULL,
+  sd.conc = 0,
+  vol = NULL,
+  sd.vol = 0,
+  cell.dna = 0.006,
+  haploid = FALSE,
+  kit = NULL,
+  slope = NULL,
+  intercept = NULL,
+  debug = FALSE
+)
 }
 \arguments{
 \item{data}{data.frame with columns 'Marker', 'Allele', and 'Sim' defining

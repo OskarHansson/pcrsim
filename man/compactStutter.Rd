@@ -4,8 +4,7 @@
 \alias{compactStutter}
 \title{Merge Stutters With Profile.}
 \usage{
-compactStutter(data, targetcol = NA, stutterin = "PCR.Stutter.",
-  debug = FALSE)
+compactStutter(data, targetcol = NA, stutterin = "PCR.Stutter.", debug = FALSE)
 }
 \arguments{
 \item{data}{data.frame to be merged. Columns 'Sample.Name', 'Marker', and

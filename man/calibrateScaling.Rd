@@ -4,9 +4,17 @@
 \alias{calibrateScaling}
 \title{Calibrate Peak Height Scaling}
 \usage{
-calibrateScaling(data, ref = NULL, target, c.min = 0, c.max = 10000,
-  min.step.size = 1e-04, exact.matching = FALSE, progress = FALSE,
-  .i = 1)
+calibrateScaling(
+  data,
+  ref = NULL,
+  target,
+  c.min = 0,
+  c.max = 10000,
+  min.step.size = 1e-04,
+  exact.matching = FALSE,
+  progress = FALSE,
+  .i = 1
+)
 }
 \arguments{
 \item{data}{data.frame simulated data.}

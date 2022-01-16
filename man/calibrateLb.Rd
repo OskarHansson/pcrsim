@@ -4,9 +4,19 @@
 \alias{calibrateLb}
 \title{Calibrate Inter-locus Balance}
 \usage{
-calibrateLb(sim = 100, target, amount = 0.5, cell.dna = 0.006,
-  pcr.cyc = 30, acc.dev = 0.001, step.size = 0.001, seed = 0.85,
-  max.eff = 0.98, progress = TRUE, debug = FALSE)
+calibrateLb(
+  sim = 100,
+  target,
+  amount = 0.5,
+  cell.dna = 0.006,
+  pcr.cyc = 30,
+  acc.dev = 0.001,
+  step.size = 0.001,
+  seed = 0.85,
+  max.eff = 0.98,
+  progress = TRUE,
+  debug = FALSE
+)
 }
 \arguments{
 \item{sim}{integer the number of simulations per calibration cycle.}

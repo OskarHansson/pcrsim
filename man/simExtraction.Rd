@@ -4,8 +4,15 @@
 \alias{simExtraction}
 \title{DNA Extraction Simulator}
 \usage{
-simExtraction(data = NULL, vol.ex = 100, sd.vol = 0, prob.ex = 0.3,
-  sd.prob = 0, cell.dna = 0.006, debug = FALSE)
+simExtraction(
+  data = NULL,
+  vol.ex = 100,
+  sd.vol = 0,
+  prob.ex = 0.3,
+  sd.prob = 0,
+  cell.dna = 0.006,
+  debug = FALSE
+)
 }
 \arguments{
 \item{data}{data.frame with simulated data. Preferably output from

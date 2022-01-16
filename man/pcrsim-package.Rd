@@ -15,13 +15,14 @@ be used to: reduce the laboratory work needed to validate new STR kits,
 create samples for educational purposes, help develop methods for
 interpretation of DNA evidence, etc.
 
-This is a first version which is still experimental and under development.
-
 Areas in need of more research are better calibration and more correct
 scaling to peak heights over a range of input amounts. The current
 implementation is built to mimic the biological processes as closely as
 possible and are not suitable for simulation of large number of samples
-due to performance.
+due to performance. A discussion of limitations and improvements are
+available in my thesis "Development of computer software to characterise
+and simulate molecular biology processes used in forensic DNA profiling assays"
+(ISBN 978-82-8377-319-4).
 }
 \references{
 Gill, Peter, James Curran, and Keith Elliot.

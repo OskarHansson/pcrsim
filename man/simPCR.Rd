@@ -4,10 +4,23 @@
 \alias{simPCR}
 \title{PCR Simulator}
 \usage{
-simPCR(data, kit = NULL, method = "DEFAULT", pcr.cyc = 30,
-  pcr.prob = 0.8, sd.pcr.prob = 0, stutter = TRUE, stutter.prob = 0.002,
-  sd.stutter.prob = 0, stutter.reg = FALSE, vol.aliq = 10,
-  sd.vol.aliq = 0, vol.pcr = 25, sd.vol.pcr = 0, debug = FALSE)
+simPCR(
+  data,
+  kit = NULL,
+  method = "DEFAULT",
+  pcr.cyc = 30,
+  pcr.prob = 0.8,
+  sd.pcr.prob = 0,
+  stutter = TRUE,
+  stutter.prob = 0.002,
+  sd.stutter.prob = 0,
+  stutter.reg = FALSE,
+  vol.aliq = 10,
+  sd.vol.aliq = 0,
+  vol.pcr = 25,
+  sd.vol.pcr = 0,
+  debug = FALSE
+)
 }
 \arguments{
 \item{data}{data.frame with simulated data. Preferably output from \code{\link{simExtraction}}.

@@ -4,8 +4,15 @@
 \alias{simNormalize}
 \title{Normalization Simulator}
 \usage{
-simNormalize(data = NULL, volume = NULL, accuracy = 1,
-  target = 0.5/17.5, tolerance = 0.1, multiple = FALSE, debug = FALSE)
+simNormalize(
+  data = NULL,
+  volume = NULL,
+  accuracy = 1,
+  target = 0.5/17.5,
+  tolerance = 0.1,
+  multiple = FALSE,
+  debug = FALSE
+)
 }
 \arguments{
 \item{data}{data.frame with simulated data. Preferably output from

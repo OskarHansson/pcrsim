@@ -4,9 +4,18 @@
 \alias{simCE}
 \title{CE Simulator}
 \usage{
-simCE(data, vol = 1, sd.vol = 0, intercept = -7.7662, slope = 0.859,
-  sigma = 0.5798, t.intercept = 10.82719, t.slope = 0.9047,
-  t.sigma = 0.5951, debug = FALSE)
+simCE(
+  data,
+  vol = 1,
+  sd.vol = 0,
+  intercept = -7.7662,
+  slope = 0.859,
+  sigma = 0.5798,
+  t.intercept = 10.82719,
+  t.slope = 0.9047,
+  t.sigma = 0.5951,
+  debug = FALSE
+)
 }
 \arguments{
 \item{data}{data.frame with simulated data. Preferably output from  \code{\link{simPCR}}.

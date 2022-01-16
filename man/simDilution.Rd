@@ -4,10 +4,20 @@
 \alias{simDilution}
 \title{Serial Dilution Simulator}
 \usage{
-simDilution(data = NULL, stock.conc = 10, stock.vol = 1000,
-  stock.aliq = 5, amount = c(1, 0.1), steps = 3, dilution.factor = 0.5,
-  dilution.aliq = 100, pcr.aliq = 17.5, cell.dna = 0.006,
-  truncate.top = TRUE, debug = FALSE)
+simDilution(
+  data = NULL,
+  stock.conc = 10,
+  stock.vol = 1000,
+  stock.aliq = 5,
+  amount = c(1, 0.1),
+  steps = 3,
+  dilution.factor = 0.5,
+  dilution.aliq = 100,
+  pcr.aliq = 17.5,
+  cell.dna = 0.006,
+  truncate.top = TRUE,
+  debug = FALSE
+)
 }
 \arguments{
 \item{data}{data.frame with simulated data.}
